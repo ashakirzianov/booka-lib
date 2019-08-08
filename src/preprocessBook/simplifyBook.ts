@@ -2,11 +2,11 @@ import {
     VolumeNode, ContentNode, ChapterNode, ParagraphNode,
     Span,
 } from '../bookFormat';
-import { filterUndefined, assertNever, isWhitespaces } from '../utils';
 import {
+    filterUndefined, assertNever, isWhitespaces,
     isChapter, isParagraph, isSimple, isAttributed,
     isFootnote, isCompound,
-} from '../bookUtils';
+} from '../utils';
 
 export function simplifyVolume(volume: VolumeNode): VolumeNode {
     const nodes = simplifyNodes(volume.nodes);

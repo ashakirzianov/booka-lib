@@ -7,9 +7,9 @@ import {
 } from '../bookFormat';
 import {
     flatten, filterUndefined, assertNever,
+    compoundSpan, assign,
 } from '../utils';
 import { ParserDiagnoser } from '../log';
-import { compoundSpan, assign } from '../bookUtils';
 
 export function blocks2book(blocks: Block[], ds: ParserDiagnoser): VolumeNode {
     const { rest, footnotes } = separateFootnoteContainers(blocks);
