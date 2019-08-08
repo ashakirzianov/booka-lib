@@ -1,5 +1,5 @@
 import { Model, Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from './mongooseMapper';
+import { TypeFromSchema } from '../common';
 import { transliterate, filterUndefined } from '../utils';
 import { VolumeNode } from '../bookFormat';
 import { logger } from '../log';
