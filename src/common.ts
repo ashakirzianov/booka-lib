@@ -2,15 +2,31 @@
 import { ParameterizedContext, Middleware } from 'koa';
 import * as KoaRouter from 'koa-router';
 
-export type Result<T> = {
-    success: true,
-    value: T,
-} | {
-    success: false,
-    reason?: string,
+type StringKeysOf<T> = Exclude<keyof T, number | symbol>;
+type ReturnValue = object | string | number | boolean;
+type StringMap<Keys extends string> = {
+    [k in Keys]: ReturnValue;
 };
+export type SingleContract<R extends ReturnValue = ReturnValue, P extends ReturnValue = ReturnValue> = {
+    return: R,
+    params?: P,
+};
+export type MethodContract<
+    Keys extends string,
+    R extends StringMap<Keys> = StringMap<Keys>,
+    P extends StringMap<Keys> = StringMap<Keys>> = {
+        [k in Keys]: SingleContract<R[k], P[k]>;
+    };
 
-export type ApiHandlerResult<T> = {
+export type ApiContract<
+    Get extends MethodContract<StringKeysOf<Get>> = MethodContract<string>,
+    Post extends MethodContract<StringKeysOf<Post>> = MethodContract<string>,
+    > = {
+        get: Get,
+        post: Post,
+    };
+
+export type ApiFnResult<T> = {
     fail: string,
     status?: number,
     success?: undefined,
@@ -18,10 +34,44 @@ export type ApiHandlerResult<T> = {
     fail?: undefined,
     success: T,
 };
-type ApiHandler<R> = (ctx: ParameterizedContext) => Promise<ApiHandlerResult<R>>;
-function jsonApi<R = {}>(handler: ApiHandler<R>): Middleware<{}> {
+export type ExtendedContext<Params> = ParameterizedContext & {
+    params: Partial<Params>, // TODO: make partial ?
+};
+export type ApiFn<C extends SingleContract> =
+    (ctx: ExtendedContext<C['params']>) => Promise<ApiFnResult<C['return']>>;
+export type Router<C extends ApiContract> = {
+    routes: KoaRouter['routes'],
+    allowedMethods: KoaRouter['allowedMethods'],
+    get<Path extends keyof C['get']>(path: Path, handler: ApiFn<C['get'][Path]>): Router<C>,
+    post<Path extends keyof C['post']>(path: Path, handler: ApiFn<C['post'][Path]>): Router<C>,
+};
+
+export function createRouter<C extends ApiContract>(): Router<C> {
+    const koaRouter = new KoaRouter();
+
+    function getRouter() {
+        return router;
+    }
+
+    const router: Router<C> = {
+        routes: koaRouter.routes,
+        allowedMethods: koaRouter.allowedMethods,
+        get<Path extends keyof C['get']>(path: Path, handler: ApiFn<C['get'][Path]>): Router<C> {
+            koaRouter.get(path as string, jsonApi(handler));
+            return getRouter();
+        },
+        post<Path extends keyof C['post']>(path: Path, handler: ApiFn<C['post'][Path]>): Router<C> {
+            koaRouter.post(path as string, jsonApi(handler));
+            return getRouter();
+        },
+    };
+
+    return router;
+}
+
+function jsonApi<R extends SingleContract>(handler: ApiFn<R>): Middleware<{}> {
     return async ctx => {
-        const handlerResult = await handler(ctx);
+        const handlerResult = await handler(ctx as any);
 
         if (handlerResult.fail === undefined) {
             ctx.response.body = handlerResult.success;
@@ -30,31 +80,6 @@ function jsonApi<R = {}>(handler: ApiHandler<R>): Middleware<{}> {
             ctx.response.body = undefined;
         }
     };
-}
-
-export type MethodRouterDefinition<T extends object> = {
-    [k in keyof T]: ApiHandler<T[k]>;
-};
-export type RouterDefinition<Get extends object, Post extends object> = {
-    get: MethodRouterDefinition<Get>,
-    post: MethodRouterDefinition<Post>,
-};
-
-export function defineRouter<C extends RouterDefinition<{}, {}>>(definition: RouterDefinition<C['get'], C['post']>) {
-    const router = new KoaRouter();
-    defineMethodRouter(router, 'get', definition.get);
-    defineMethodRouter(router, 'post', definition.post);
-
-    return router;
-}
-
-function defineMethodRouter<T extends object>(router: KoaRouter, key: 'get' | 'post', definition: MethodRouterDefinition<T>) {
-    for (const [path, obj] of Object.entries(definition)) {
-        const handler = obj as ApiHandler<any>;
-        router[key](path, jsonApi(handler));
-    }
-
-    return router;
 }
 
 // Mongoose:
