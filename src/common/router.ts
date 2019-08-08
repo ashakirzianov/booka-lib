@@ -37,8 +37,8 @@ export function createRouter<C extends ApiContract>(): Router<C> {
     }
 
     const router: Router<C> = {
-        routes: koaRouter.routes,
-        allowedMethods: koaRouter.allowedMethods,
+        routes: koaRouter.routes.bind(koaRouter),
+        allowedMethods: koaRouter.allowedMethods.bind(koaRouter),
         get: (path, handler) => {
             koaRouter.get(path as string, buildMiddleware(handler));
             return getRouter();
