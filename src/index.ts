@@ -30,7 +30,7 @@ async function startup(app: Koa) {
 }
 
 function listen(app: Koa) {
-    const port = process.env.PORT || 3145;
+    const port = process.env.PORT || config().defaultPort;
     createServer(app.callback())
         .listen(port);
 }

@@ -6,6 +6,7 @@ export function config(): Config {
 
 function debugConfig(): Config {
     return {
+        defaultPort: 3145,
         ssl: {
             keyPath: 'server.key',
             certPath: 'server.crt',
@@ -14,7 +15,9 @@ function debugConfig(): Config {
 }
 
 function productionConfig(): Config {
-    return {};
+    return {
+        defaultPort: 3145,
+    };
 }
 
 function isDebug() {
@@ -27,5 +30,6 @@ export type SslConfig = {
 };
 
 export type Config = {
+    defaultPort: number,
     ssl?: SslConfig,
 };
