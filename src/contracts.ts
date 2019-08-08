@@ -1,13 +1,23 @@
 import { VolumeNode } from './bookFormat';
 
-export type BookInfo = {
+type BookInfo = {
     id: string,
     title: string,
     author?: string,
 };
 
-export type BookCollection = {
+type BookCollection = {
     books: BookInfo[],
 };
 
-export type Book = VolumeNode;
+type Book = VolumeNode;
+
+export type LibraryContract = {
+    get: {
+        '/id/:id': Book,
+        'all': BookCollection,
+    },
+    post: {
+        'upload': string,
+    },
+};

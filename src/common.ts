@@ -1,5 +1,6 @@
 // Routing:
 import { ParameterizedContext, Middleware } from 'koa';
+import * as KoaRouter from 'koa-router';
 
 export type Result<T> = {
     success: true,
@@ -18,7 +19,7 @@ export type ApiHandlerResult<T> = {
     success: T,
 };
 type ApiHandler<R> = (ctx: ParameterizedContext) => Promise<ApiHandlerResult<R>>;
-export function jsonApi<R = {}>(handler: ApiHandler<R>): Middleware<{}> {
+function jsonApi<R = {}>(handler: ApiHandler<R>): Middleware<{}> {
     return async ctx => {
         const handlerResult = await handler(ctx);
 
@@ -29,6 +30,31 @@ export function jsonApi<R = {}>(handler: ApiHandler<R>): Middleware<{}> {
             ctx.response.body = undefined;
         }
     };
+}
+
+export type MethodRouterDefinition<T extends object> = {
+    [k in keyof T]: ApiHandler<T[k]>;
+};
+export type RouterDefinition<Get extends object, Post extends object> = {
+    get: MethodRouterDefinition<Get>,
+    post: MethodRouterDefinition<Post>,
+};
+
+export function defineRouter<C extends RouterDefinition<{}, {}>>(definition: RouterDefinition<C['get'], C['post']>) {
+    const router = new KoaRouter();
+    defineMethodRouter(router, 'get', definition.get);
+    defineMethodRouter(router, 'post', definition.post);
+
+    return router;
+}
+
+function defineMethodRouter<T extends object>(router: KoaRouter, key: 'get' | 'post', definition: MethodRouterDefinition<T>) {
+    for (const [path, obj] of Object.entries(definition)) {
+        const handler = obj as ApiHandler<any>;
+        router[key](path, jsonApi(handler));
+    }
+
+    return router;
 }
 
 // Mongoose:
