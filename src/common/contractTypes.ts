@@ -1,4 +1,4 @@
-type StringKeysOf<T> = Exclude<keyof T, number | symbol>;
+export type StringKeysOf<T> = Exclude<keyof T, number | symbol>;
 type ReturnType = object | string | number | boolean;
 type ParamsType = object;
 type FilesType = string;

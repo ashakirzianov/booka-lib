@@ -1,6 +1,8 @@
 import { ParameterizedContext, Middleware, Request } from 'koa';
 import * as KoaRouter from 'koa-router';
-import { PathContract, ApiContract, MethodNames } from './contractTypes';
+import {
+    PathContract, ApiContract, MethodNames, StringKeysOf,
+} from './contractTypes';
 
 export type ApiHandlerResult<T> = {
     fail: string,
@@ -19,7 +21,7 @@ export type ExtendedContext<C extends PathContract> = ParameterizedContext & {
 export type ApiHandler<C extends PathContract> =
     (ctx: ExtendedContext<C>) => Promise<ApiHandlerResult<C['return']>>;
 export type MethodDefiner<C extends ApiContract, M extends MethodNames> =
-    <Path extends keyof C[M]>(path: Path, handler: ApiHandler<C[M][Path]>) => Router<C>;
+    <Path extends StringKeysOf<C[M]>>(path: Path, handler: ApiHandler<C[M][Path]>) => Router<C>;
 export type Router<C extends ApiContract> = {
     routes: KoaRouter['routes'],
     allowedMethods: KoaRouter['allowedMethods'],
@@ -37,11 +39,11 @@ export function createRouter<C extends ApiContract>(): Router<C> {
     const router: Router<C> = {
         routes: koaRouter.routes,
         allowedMethods: koaRouter.allowedMethods,
-        get<Path extends keyof C['get']>(path: Path, handler: ApiHandler<C['get'][Path]>): Router<C> {
+        get: (path, handler) => {
             koaRouter.get(path as string, buildMiddleware(handler));
             return getRouter();
         },
-        post<Path extends keyof C['post']>(path: Path, handler: ApiHandler<C['post'][Path]>): Router<C> {
+        post: (path, handler) => {
             koaRouter.post(path as string, buildMiddleware(handler));
             return getRouter();
         },
