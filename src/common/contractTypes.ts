@@ -1,15 +1,18 @@
 type StringKeysOf<T> = Exclude<keyof T, number | symbol>;
 type ReturnType = object | string | number | boolean;
 type ParamsType = object;
+type FilesType = string;
 type StringMap<Keys extends string, R = ReturnType> = {
     [k in Keys]: R;
 };
 export type PathContract<
     R extends ReturnType = ReturnType,
-    P extends object = object,
+    P extends ParamsType = ParamsType,
+    F extends FilesType = FilesType,
     > = {
         return: R,
         params?: P,
+        files?: F,
     };
 export type MethodContract<
     Keys extends string = string,
@@ -26,3 +29,4 @@ export type ApiContract<
         get: Get,
         post: Post,
     };
+export type MethodNames = keyof ApiContract;

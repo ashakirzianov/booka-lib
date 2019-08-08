@@ -1,6 +1,6 @@
-import { ParameterizedContext, Middleware } from 'koa';
+import { ParameterizedContext, Middleware, Request } from 'koa';
 import * as KoaRouter from 'koa-router';
-import { PathContract, ApiContract } from './contractTypes';
+import { PathContract, ApiContract, MethodNames } from './contractTypes';
 
 export type ApiHandlerResult<T> = {
     fail: string,
@@ -10,17 +10,22 @@ export type ApiHandlerResult<T> = {
     fail?: undefined,
     success: T,
 };
-export type ExtendedContext<Params> = ParameterizedContext & {
-    params: Partial<Params>, // TODO: make partial ?
+export type ExtendedContext<C extends PathContract> = ParameterizedContext & {
+    params: Partial<C['params']>,
+    files?: {
+        [k in Defined<C['files']>]: File | undefined;
+    },
 };
 export type ApiHandler<C extends PathContract> =
-    (ctx: ExtendedContext<C['params']>) => Promise<ApiHandlerResult<C['return']>>;
+    (ctx: ExtendedContext<C>) => Promise<ApiHandlerResult<C['return']>>;
+export type MethodDefiner<C extends ApiContract, M extends MethodNames> =
+    <Path extends keyof C[M]>(path: Path, handler: ApiHandler<C[M][Path]>) => Router<C>;
 export type Router<C extends ApiContract> = {
     routes: KoaRouter['routes'],
     allowedMethods: KoaRouter['allowedMethods'],
-    get<Path extends keyof C['get']>(path: Path, handler: ApiHandler<C['get'][Path]>): Router<C>,
-    post<Path extends keyof C['post']>(path: Path, handler: ApiHandler<C['post'][Path]>): Router<C>,
-};
+} & {
+        [m in MethodNames]: MethodDefiner<C, m>;
+    };
 
 export function createRouter<C extends ApiContract>(): Router<C> {
     const koaRouter = new KoaRouter();
@@ -57,3 +62,8 @@ function buildMiddleware<R extends PathContract>(handler: ApiHandler<R>): Middle
         }
     };
 }
+
+type Defined<T> = Exclude<T, undefined>;
+// Note: this is a bit cryptic way
+// of getting actual koa-body file type
+type File = Defined<Request['files']>[string];

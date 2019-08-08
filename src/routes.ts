@@ -4,15 +4,15 @@ import { createRouter } from './common';
 
 export const router = createRouter<LibraryContract>();
 
-router.get('/id/:id', async p => {
-    if (p.params.id) {
-        const book = await books.byBookIdParsed(p.params.id);
+router.get('/id/:id', async ctx => {
+    if (ctx.params.id) {
+        const book = await books.byBookIdParsed(ctx.params.id);
         return book
             ? {
                 success: book,
             }
             : {
-                fail: `Couldn't find book for id: '${p.params.id}'`,
+                fail: `Couldn't find book for id: '${ctx.params.id}'`,
             };
     } else {
         return { fail: 'Book id is not specified' };
@@ -29,9 +29,8 @@ router.get('/all', async () => {
     };
 });
 
-router.post('/upload', async p => {
-    const files = p.files;
-    const book = files && files.book;
+router.post('/upload', async ctx => {
+    const book = ctx.files && ctx.files.book;
     if (book) {
         const bookId = await parseAndInsert(book.path);
         return bookId

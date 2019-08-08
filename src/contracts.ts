@@ -21,6 +21,9 @@ export type LibraryContract = {
         '/all': { return: BookCollection, },
     },
     post: {
-        '/upload': { return: string },
+        '/upload': {
+            return: string,
+            files: 'book',
+        },
     },
 };
