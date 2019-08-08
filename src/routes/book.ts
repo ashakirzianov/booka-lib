@@ -1,13 +1,14 @@
 import { books } from '../db';
-import * as Contracts from '../contracts';
-import { createRouter, jsonApi } from './router';
+import * as KoaRouter from 'koa-router';
 import { logTimeAsync, logger } from '../log';
 import { loadEpubPath } from '../epub';
+import { Book, BookCollection } from '../contracts';
+import { jsonApi } from '../common';
 
-export const bookRouter = createRouter();
+export const bookRouter = new KoaRouter();
 
 bookRouter.get('/id/:id',
-    jsonApi<Contracts.VolumeNode>(async p => {
+    jsonApi<Book>(async p => {
         if (p.params.id) {
             const book = await books.byBookIdParsed(p.params.id);
             return book
@@ -24,7 +25,7 @@ bookRouter.get('/id/:id',
 );
 
 bookRouter.get('/all',
-    jsonApi<Contracts.BookCollection>(async () => {
+    jsonApi<BookCollection>(async () => {
         const allBooks = await books.all();
 
         return {

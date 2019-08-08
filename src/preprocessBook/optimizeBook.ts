@@ -1,7 +1,7 @@
 import {
     VolumeNode, ContentNode,
     Span, AttributeName, ParagraphNode, CompoundSpan,
-} from '../contracts';
+} from '../bookFormat';
 import { assertNever } from '../utils';
 import { logger } from '../log';
 import {

@@ -1,6 +1,6 @@
-import { createRouter } from './router';
+import * as KoaRouter from 'koa-router';
 import { bookRouter } from './book';
 
-export const router = createRouter();
+export const router = new KoaRouter();
 
 router.use('/book', bookRouter.routes());
