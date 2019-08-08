@@ -11,6 +11,7 @@ export type Result<T> = {
 
 export type ApiHandlerResult<T> = {
     fail: string,
+    status?: number,
     success?: undefined,
 } | {
     fail?: undefined,
@@ -21,11 +22,12 @@ export function jsonApi<R = {}>(handler: ApiHandler<R>): Middleware<{}> {
     return async ctx => {
         const handlerResult = await handler(ctx);
 
-        const apiResult: Result<R> = handlerResult.success
-            ? { success: true, value: handlerResult.success }
-            : { success: false, reason: handlerResult.fail };
-
-        ctx.response.body = apiResult;
+        if (handlerResult.fail === undefined) {
+            ctx.response.body = handlerResult.success;
+        } else {
+            ctx.response.status = handlerResult.status || 500;
+            ctx.response.body = undefined;
+        }
     };
 }
 
