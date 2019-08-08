@@ -1,13 +1,13 @@
-import { books } from '../db';
 import * as KoaRouter from 'koa-router';
-import { logTimeAsync, logger } from '../log';
-import { loadEpubPath } from '../epub';
-import { Book, BookCollection } from '../contracts';
-import { jsonApi } from '../common';
+import { books } from './db';
+import { logTimeAsync, logger } from './log';
+import { loadEpubPath } from './epub';
+import { Book, BookCollection } from './contracts';
+import { jsonApi } from './common';
 
-export const bookRouter = new KoaRouter();
+export const router = new KoaRouter();
 
-bookRouter.get('/id/:id',
+router.get('/id/:id',
     jsonApi<Book>(async p => {
         if (p.params.id) {
             const book = await books.byBookIdParsed(p.params.id);
@@ -24,7 +24,7 @@ bookRouter.get('/id/:id',
     })
 );
 
-bookRouter.get('/all',
+router.get('/all',
     jsonApi<BookCollection>(async () => {
         const allBooks = await books.all();
 
@@ -36,7 +36,7 @@ bookRouter.get('/all',
     })
 );
 
-bookRouter.post('/upload', jsonApi<string>(async p => {
+router.post('/upload', jsonApi<string>(async p => {
     const files = p.files;
     const book = files && files.book;
     if (book) {
