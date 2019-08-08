@@ -6,7 +6,7 @@ import * as koaBody from 'koa-body';
 import * as logger from 'koa-logger';
 import { config as configEnv } from 'dotenv';
 import { router } from './routes';
-import { connectDb } from './connect';
+import { connectDb } from './db';
 import { config, SslConfig } from './config';
 import { logDebug } from './log';
 

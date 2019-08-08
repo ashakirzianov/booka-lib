@@ -1,10 +1,11 @@
 import * as Mongoose from 'mongoose';
-import * as fs from 'fs';
+import { readdir } from 'fs';
 
 import { promisify } from 'util';
-import { info, books } from './db';
-import { logger, logTimeAsync } from './log';
-import { parserVersion, loadEpubPath } from './epub';
+import { books } from './books';
+import { info } from './info';
+import { logger, logTimeAsync } from '../log';
+import { parserVersion, loadEpubPath } from '../epub';
 
 const epubLocation = 'public/epub/';
 
@@ -30,7 +31,7 @@ async function seedImpl(pv: number) {
 
     const count = await books.count();
     if (count === 0) {
-        const files = await readdir(epubLocation);
+        const files = await promisify(readdir)(epubLocation);
         const promises = files
             // .slice(2, 4)
             .map(parseAndInsert);
@@ -51,5 +52,3 @@ async function parseAndInsert(path: string) {
         logger().warn(`While parsing '${path}' error: ${e}`);
     }
 }
-
-const readdir = promisify(fs.readdir);
