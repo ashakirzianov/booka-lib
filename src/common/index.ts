@@ -1,2 +1,2 @@
 export * from './routing';
-export * from './mongooseMapper';
+export * from './mongooseUtils';
