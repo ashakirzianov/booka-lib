@@ -34,21 +34,22 @@ async function seedImpl(pv: number) {
         const files = await promisify(readdir)(epubLocation);
         const promises = files
             // .slice(2, 4)
+            .map(path => epubLocation + path)
             .map(parseAndInsert);
         await Promise.all(promises);
         info.setParserVersion(pv);
     }
 }
 
-async function parseAndInsert(path: string) {
+export async function parseAndInsert(fullPath: string) {
     try {
-        const fullPath = epubLocation + path;
         const book = await logTimeAsync(
-            `Parse: ${path}`,
+            `Parse: ${fullPath}`,
             () => loadEpubPath(fullPath)
         );
-        await books.insertParsed(book);
+        return await books.insertParsed(book);
     } catch (e) {
-        logger().warn(`While parsing '${path}' error: ${e}`);
+        logger().warn(`While parsing '${fullPath}' error: ${e}`);
+        return undefined;
     }
 }

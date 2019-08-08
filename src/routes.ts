@@ -1,6 +1,4 @@
-import { books } from './db';
-import { logTimeAsync, logger } from './log';
-import { loadEpubPath } from './epub';
+import { parseAndInsert, books } from './db';
 import { LibraryContract } from './contracts';
 import { defineRouter } from './common';
 
@@ -45,17 +43,3 @@ export const router = defineRouter<LibraryContract>({
         },
     },
 });
-
-// TODO: move ?
-async function parseAndInsert(fullPath: string) {
-    try {
-        const book = await logTimeAsync(
-            `Parse: ${fullPath}`,
-            () => loadEpubPath(fullPath)
-        );
-        return await books.insertParsed(book);
-    } catch (e) {
-        logger().warn(`While parsing '${fullPath}' error: ${e}`);
-        return undefined;
-    }
-}
