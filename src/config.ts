@@ -7,10 +7,10 @@ export function config(): Config {
 function debugConfig(): Config {
     return {
         defaultPort: 3141,
-        ssl: {
-            keyPath: 'server.key',
-            certPath: 'server.crt',
-        },
+        // ssl: {
+        //     keyPath: 'server.key',
+        //     certPath: 'server.crt',
+        // },
     };
 }
 

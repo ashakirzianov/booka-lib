@@ -34,7 +34,7 @@ router.post('/upload', async ctx => {
     if (book) {
         const bookId = await parseAndInsert(book.path);
         return bookId
-            ? { success: `Inserted with id: '${bookId}'` }
+            ? { success: bookId }
             : { fail: `Couldn't parse book` };
     }
 
