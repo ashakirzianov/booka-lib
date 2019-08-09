@@ -10,7 +10,7 @@ export type BookCollection = {
     books: BookInfo[],
 };
 
-export type LibraryContract = {
+export type LibContract = {
     get: {
         '/single': {
             query: { id: string },

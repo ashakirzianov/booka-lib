@@ -1,8 +1,8 @@
 import { parseAndInsert, books } from './db';
-import { LibraryContract } from './libContract';
+import { LibContract } from './libContract';
 import { createRouter } from './common';
 
-export const router = createRouter<LibraryContract>();
+export const router = createRouter<LibContract>();
 
 router.get('/single', async ctx => {
     if (ctx.query.id) {
