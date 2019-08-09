@@ -1,9 +1,12 @@
+export type AuthContract = {
+    auth: string,
+};
 export type PathMethodContract = {
     return: object | string | number | boolean,
     params?: object,
     query?: object,
     files?: string,
-};
+} & Partial<AuthContract>;
 export type PathContract = {
     get?: PathMethodContract,
     post?: PathMethodContract,
