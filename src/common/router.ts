@@ -1,4 +1,4 @@
-import { ParameterizedContext, Middleware, Request } from 'koa';
+import { Middleware, Request } from 'koa';
 import * as KoaRouter from 'koa-router';
 import {
     PathContract, ApiContract, MethodNames, StringKeysOf,
@@ -12,18 +12,17 @@ export type ApiHandlerResult<T> = {
     fail?: undefined,
     success: T,
 };
-export type ExtendedContext<C extends PathContract> =
-    Omit<ParameterizedContext, 'params' | 'query' | 'request'> & {
-        params: Partial<C['params']>,
-        query: Partial<C['query']>,
-        request: Omit<ParameterizedContext['request'], 'files'> & {
-            files: {
-                [k in Defined<C['files']>]: File | undefined;
-            },
+export type RestrictedContext<C extends PathContract, Ext = {}> = Ext & {
+    params: Partial<C['params']>,
+    query: Partial<C['query']>,
+    request: {
+        files: {
+            [k in Defined<C['files']>]: File | undefined;
         },
-    };
-export type ApiHandler<C extends PathContract> =
-    (ctx: ExtendedContext<C>) => Promise<ApiHandlerResult<C['return']>>;
+    },
+};
+export type ApiHandler<C extends PathContract, Ext = {}> =
+    (ctx: RestrictedContext<C, Ext>, next: () => Promise<any>) => Promise<ApiHandlerResult<C['return']>>;
 export type DefinePathFn<C extends ApiContract, M extends MethodNames> =
     <Path extends StringKeysOf<C[M]>>(path: Path, handler: ApiHandler<C[M][Path]>) => Router<C>;
 export type Router<C extends ApiContract> = {
@@ -58,8 +57,8 @@ export function createRouter<C extends ApiContract>(): Router<C> {
 }
 
 function buildMiddleware<R extends PathContract>(handler: ApiHandler<R>): Middleware<{}> {
-    return async ctx => {
-        const handlerResult = await handler(ctx as any);
+    return async (ctx, next) => {
+        const handlerResult = await handler(ctx as any, next);
 
         if (handlerResult.fail === undefined) {
             ctx.response.body = handlerResult.success;
