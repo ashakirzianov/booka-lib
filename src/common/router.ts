@@ -1,7 +1,8 @@
 import { Middleware, Request } from 'koa';
 import * as KoaRouter from 'koa-router';
 import {
-    PathContract, ApiContract, MethodNames, StringKeysOf,
+    PathMethodContract, ApiContract, MethodNames,
+    AllowedPaths, Contract, Defined,
 } from './contractTypes';
 
 export type ApiHandlerResult<T> = {
@@ -12,7 +13,7 @@ export type ApiHandlerResult<T> = {
     fail?: undefined,
     success: T,
 };
-export type RestrictedContext<C extends PathContract, Ext = {}> = Ext & {
+export type RestrictedContext<C extends PathMethodContract, Ext = {}> = Ext & {
     params: Partial<C['params']>,
     query: Partial<C['query']>,
     request: {
@@ -21,10 +22,11 @@ export type RestrictedContext<C extends PathContract, Ext = {}> = Ext & {
         },
     },
 };
-export type ApiHandler<C extends PathContract, Ext = {}> =
+
+export type ApiHandler<C extends PathMethodContract, Ext = {}> =
     (ctx: RestrictedContext<C, Ext>, next: () => Promise<any>) => Promise<ApiHandlerResult<C['return']>>;
 export type DefinePathFn<C extends ApiContract, M extends MethodNames> =
-    <Path extends StringKeysOf<C[M]>>(path: Path, handler: ApiHandler<C[M][Path]>) => Router<C>;
+    <Path extends AllowedPaths<C, M>>(path: Path, handler: ApiHandler<Contract<C, M, Path>>) => Router<C>;
 export type Router<C extends ApiContract> = {
     routes: KoaRouter['routes'],
     allowedMethods: KoaRouter['allowedMethods'],
@@ -41,7 +43,7 @@ export function createRouter<C extends ApiContract>(): Router<C> {
 
     function buildDefinePathFn<M extends MethodNames>(m: M): DefinePathFn<C, M> {
         return (path, handler) => {
-            koaRouter[m](path, buildMiddleware(handler));
+            koaRouter[m](path as any, buildMiddleware(handler));
             return getRouter();
         };
     }
@@ -56,7 +58,7 @@ export function createRouter<C extends ApiContract>(): Router<C> {
     return router;
 }
 
-function buildMiddleware<R extends PathContract>(handler: ApiHandler<R>): Middleware<{}> {
+function buildMiddleware<R extends PathMethodContract>(handler: ApiHandler<R>): Middleware<{}> {
     return async (ctx, next) => {
         const handlerResult = await handler(ctx as any, next);
 
@@ -69,7 +71,6 @@ function buildMiddleware<R extends PathContract>(handler: ApiHandler<R>): Middle
     };
 }
 
-type Defined<T> = Exclude<T, undefined>;
 // Note: this is a bit cryptic way
 // of getting actual koa-body file type
-type File = Defined<Request['files']>[string];
+export type File = Defined<Request['files']>[string];

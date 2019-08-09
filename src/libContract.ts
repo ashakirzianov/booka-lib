@@ -11,15 +11,17 @@ export type BookCollection = {
 };
 
 export type LibContract = {
-    get: {
-        '/single': {
+    '/single': {
+        get: {
             query: { id: string },
             return: BookObject,
         },
-        '/all': { return: BookCollection, },
     },
-    post: {
-        '/upload': {
+    '/all': {
+        get: { return: BookCollection },
+    },
+    '/upload': {
+        post: {
             return: string,
             files: 'book',
         },

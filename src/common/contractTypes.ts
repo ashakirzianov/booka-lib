@@ -1,34 +1,24 @@
-export type StringKeysOf<T> = Exclude<keyof T, number | symbol>;
-type ReturnType = object | string | number | boolean;
-type ParamsType = object;
-type FilesType = string;
-type StringMap<Keys extends string, R = ReturnType> = {
-    [k in Keys]: R;
+export type PathMethodContract = {
+    return: object | string | number | boolean,
+    params?: object,
+    query?: object,
+    files?: string,
 };
-export type PathContract<
-    R extends ReturnType = ReturnType,
-    P extends ParamsType = ParamsType,
-    Q extends ParamsType = ParamsType,
-    F extends FilesType = FilesType,
-    > = {
-        return: R,
-        params?: P,
-        query?: Q,
-        files?: F,
-    };
-export type MethodContract<
-    Keys extends string = string,
-    R extends StringMap<Keys> = StringMap<Keys>,
-    P extends StringMap<Keys, ParamsType> = StringMap<Keys, ParamsType>,
-    > = {
-        [k in Keys]: PathContract<R[k], P[k]>;
-    };
+export type PathContract = {
+    get?: PathMethodContract,
+    post?: PathMethodContract,
+};
 
-export type ApiContract<
-    Get extends MethodContract<StringKeysOf<Get>> = MethodContract,
-    Post extends MethodContract<StringKeysOf<Post>> = MethodContract,
-    > = {
-        get: Get,
-        post: Post,
-    };
-export type MethodNames = keyof ApiContract;
+export type ApiContract = {
+    [k: string]: PathContract,
+};
+export type MethodNames = keyof PathContract;
+export type AllowedPaths<C extends ApiContract, M extends MethodNames> = Exclude<{
+    [k in keyof C]: undefined extends C[k][M] ? never : k;
+}[keyof C], number | symbol>;
+export type Contract<
+    C extends ApiContract,
+    M extends MethodNames,
+    Path extends AllowedPaths<C, M>,
+    > = Defined<C[Path][M]>;
+export type Defined<T> = Exclude<T, undefined>;
