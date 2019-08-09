@@ -50,3 +50,4 @@ export type VolumeNode = {
 
 export type BookNode = VolumeNode | ContentNode;
 export type HasSubnodes = VolumeNode | ChapterNode;
+export type BookObject = VolumeNode;
