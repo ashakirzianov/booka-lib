@@ -24,7 +24,8 @@ async function startup(app: Koa) {
 
     app
         .use(router.routes())
-        .use(router.allowedMethods());
+        .use(router.allowedMethods())
+        ;
 
     listen(app);
 }

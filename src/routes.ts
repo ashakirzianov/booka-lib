@@ -30,7 +30,7 @@ router.get('/all', async () => {
 });
 
 router.post('/upload', async ctx => {
-    const book = ctx.files && ctx.files.book;
+    const book = ctx.request.files.book;
     if (book) {
         const bookId = await parseAndInsert(book.path);
         return bookId

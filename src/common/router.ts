@@ -14,19 +14,21 @@ export type ApiHandlerResult<T> = {
 };
 export type ExtendedContext<C extends PathContract> = ParameterizedContext & {
     params: Partial<C['params']>,
-    files?: {
-        [k in Defined<C['files']>]: File | undefined;
+    request: {
+        files: {
+            [k in Defined<C['files']>]: File | undefined;
+        },
     },
 };
 export type ApiHandler<C extends PathContract> =
     (ctx: ExtendedContext<C>) => Promise<ApiHandlerResult<C['return']>>;
-export type MethodDefiner<C extends ApiContract, M extends MethodNames> =
+export type DefinePathFn<C extends ApiContract, M extends MethodNames> =
     <Path extends StringKeysOf<C[M]>>(path: Path, handler: ApiHandler<C[M][Path]>) => Router<C>;
 export type Router<C extends ApiContract> = {
     routes: KoaRouter['routes'],
     allowedMethods: KoaRouter['allowedMethods'],
 } & {
-        [m in MethodNames]: MethodDefiner<C, m>;
+        [m in MethodNames]: DefinePathFn<C, m>;
     };
 
 export function createRouter<C extends ApiContract>(): Router<C> {
@@ -36,17 +38,18 @@ export function createRouter<C extends ApiContract>(): Router<C> {
         return router;
     }
 
+    function buildDefinePathFn<M extends MethodNames>(m: M): DefinePathFn<C, M> {
+        return (path, handler) => {
+            koaRouter[m](path, buildMiddleware(handler));
+            return getRouter();
+        };
+    }
+
     const router: Router<C> = {
         routes: koaRouter.routes.bind(koaRouter),
         allowedMethods: koaRouter.allowedMethods.bind(koaRouter),
-        get: (path, handler) => {
-            koaRouter.get(path as string, buildMiddleware(handler));
-            return getRouter();
-        },
-        post: (path, handler) => {
-            koaRouter.post(path as string, buildMiddleware(handler));
-            return getRouter();
-        },
+        get: buildDefinePathFn('get'),
+        post: buildDefinePathFn('post'),
     };
 
     return router;
@@ -60,7 +63,7 @@ function buildMiddleware<R extends PathContract>(handler: ApiHandler<R>): Middle
             ctx.response.body = handlerResult.success;
         } else {
             ctx.response.status = handlerResult.status || 500;
-            ctx.response.body = undefined;
+            ctx.response.body = handlerResult.fail;
         }
     };
 }
