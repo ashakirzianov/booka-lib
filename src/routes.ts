@@ -1,6 +1,6 @@
 import { parseAndInsert, books } from './db';
 import { LibContract } from './libContract';
-import { createRouter } from './common';
+import { createRouter } from './common/router';
 
 export const router = createRouter<LibContract>();
 

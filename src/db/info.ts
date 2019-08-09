@@ -1,5 +1,5 @@
 import { Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from '../common';
+import { TypeFromSchema } from '../common/mongooseUtils';
 import { logger } from '../log';
 
 const schema = {
