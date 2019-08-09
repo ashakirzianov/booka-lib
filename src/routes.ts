@@ -1,5 +1,5 @@
 import { parseAndInsert, books } from './db';
-import { LibraryContract } from './contracts';
+import { LibraryContract } from './libContract';
 import { createRouter } from './common';
 
 export const router = createRouter<LibraryContract>();

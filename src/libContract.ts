@@ -1,22 +1,20 @@
-import { VolumeNode } from './bookFormat';
+import { BookObject } from './bookFormat';
 
-type BookInfo = {
+export type BookInfo = {
     id: string,
     title: string,
     author?: string,
 };
 
-type BookCollection = {
+export type BookCollection = {
     books: BookInfo[],
 };
-
-type Book = VolumeNode;
 
 export type LibraryContract = {
     get: {
         '/single': {
             query: { id: string },
-            return: Book,
+            return: BookObject,
         },
         '/all': { return: BookCollection, },
     },
