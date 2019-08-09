@@ -14,8 +14,8 @@ type Book = VolumeNode;
 
 export type LibraryContract = {
     get: {
-        '/id/:id': {
-            params: { id: string },
+        '/single': {
+            query: { id: string },
             return: Book,
         },
         '/all': { return: BookCollection, },

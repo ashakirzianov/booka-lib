@@ -12,14 +12,16 @@ export type ApiHandlerResult<T> = {
     fail?: undefined,
     success: T,
 };
-export type ExtendedContext<C extends PathContract> = ParameterizedContext & {
-    params: Partial<C['params']>,
-    request: {
-        files: {
-            [k in Defined<C['files']>]: File | undefined;
+export type ExtendedContext<C extends PathContract> =
+    Omit<ParameterizedContext, 'params' | 'query' | 'request'> & {
+        params: Partial<C['params']>,
+        query: Partial<C['query']>,
+        request: Omit<ParameterizedContext['request'], 'files'> & {
+            files: {
+                [k in Defined<C['files']>]: File | undefined;
+            },
         },
-    },
-};
+    };
 export type ApiHandler<C extends PathContract> =
     (ctx: ExtendedContext<C>) => Promise<ApiHandlerResult<C['return']>>;
 export type DefinePathFn<C extends ApiContract, M extends MethodNames> =

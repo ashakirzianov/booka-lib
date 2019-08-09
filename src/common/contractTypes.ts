@@ -8,10 +8,12 @@ type StringMap<Keys extends string, R = ReturnType> = {
 export type PathContract<
     R extends ReturnType = ReturnType,
     P extends ParamsType = ParamsType,
+    Q extends ParamsType = ParamsType,
     F extends FilesType = FilesType,
     > = {
         return: R,
         params?: P,
+        query?: Q,
         files?: F,
     };
 export type MethodContract<
