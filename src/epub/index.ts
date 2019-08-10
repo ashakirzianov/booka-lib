@@ -1,5 +1,5 @@
 import { path2book } from './path2book';
-import { VolumeNode } from '../bookFormat';
+import { VolumeNode } from '../common/bookFormat';
 import { logger } from '../log';
 import { preprocessBook } from '../preprocessBook';
 

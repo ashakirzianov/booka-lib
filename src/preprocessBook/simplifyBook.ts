@@ -1,7 +1,7 @@
 import {
     VolumeNode, ContentNode, ChapterNode, ParagraphNode,
     Span,
-} from '../bookFormat';
+} from '../common/bookFormat';
 import {
     filterUndefined, assertNever, isWhitespaces,
     isChapter, isParagraph, isSimple, isAttributed,

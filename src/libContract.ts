@@ -1,4 +1,4 @@
-import { BookObject } from './bookFormat';
+import { BookObject } from './common/bookFormat';
 
 export type BookInfo = {
     id: string,
