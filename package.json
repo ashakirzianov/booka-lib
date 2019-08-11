@@ -37,7 +37,6 @@
     "@types/koa-router": "^7.0.39",
     "@types/mongoose": "^5.3.12",
     "@types/node": "^11.13.4",
-    "cross-env": "^5.2.0",
     "jest": "^24.5.0",
     "nodemon": "^1.18.7",
     "ts-jest": "^24.0.2",
@@ -45,10 +44,8 @@
     "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@rgrove/parse-xml": "^2.0.1",
     "booka-parser": "^0.1.1",
     "dotenv": "^8.0.0",
-    "epub2": "^1.3.7",
     "koa": "^2.7.0",
     "koa-body": "^4.1.0",
     "koa-logger": "^3.2.1",
