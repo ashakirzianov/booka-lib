@@ -1,11 +1,11 @@
 import * as Mongoose from 'mongoose';
+import { loadEpubPath } from 'booka-parser';
 import { readdir } from 'fs';
 
 import { promisify } from 'util';
 import { books } from './books';
 import { info } from './info';
 import { logger, logTimeAsync } from '../log';
-import { parserVersion, loadEpubPath } from '../epub';
 
 const epubLocation = 'public/epub/';
 
@@ -41,6 +41,7 @@ async function seedImpl(pv: number) {
     }
 }
 
+const parserVersion = 1;
 export async function parseAndInsert(fullPath: string) {
     try {
         const book = await logTimeAsync(
