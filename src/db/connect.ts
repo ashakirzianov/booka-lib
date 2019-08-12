@@ -1,5 +1,5 @@
 import * as Mongoose from 'mongoose';
-import { loadEpubPath } from 'booka-parser';
+import { loadEpubPath, parserVersion } from 'booka-parser';
 import { readdir } from 'fs';
 
 import { promisify } from 'util';
@@ -23,7 +23,7 @@ async function seed() {
     seedImpl(parserVersion);
 }
 
-async function seedImpl(pv: number) {
+async function seedImpl(pv: string) {
     const storedVersion = await info.parserVersion();
     if (pv !== storedVersion) {
         await books.removeAll();
@@ -41,7 +41,6 @@ async function seedImpl(pv: number) {
     }
 }
 
-const parserVersion = 1;
 export async function parseAndInsert(fullPath: string) {
     try {
         const book = await logTimeAsync(
