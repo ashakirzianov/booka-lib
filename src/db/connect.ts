@@ -1,11 +1,11 @@
 import * as Mongoose from 'mongoose';
+import { loadEpubPath, parserVersion } from 'booka-parser';
 import { readdir } from 'fs';
 
 import { promisify } from 'util';
 import { books } from './books';
 import { info } from './info';
 import { logger, logTimeAsync } from '../log';
-import { parserVersion, loadEpubPath } from '../epub';
 
 const epubLocation = 'public/epub/';
 
@@ -23,7 +23,7 @@ async function seed() {
     seedImpl(parserVersion);
 }
 
-async function seedImpl(pv: number) {
+async function seedImpl(pv: string) {
     const storedVersion = await info.parserVersion();
     if (pv !== storedVersion) {
         await books.removeAll();

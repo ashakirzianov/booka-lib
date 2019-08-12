@@ -26,15 +26,14 @@ export const info = {
 };
 
 const parserVersionKey = 'pv';
-async function parserVersion(): Promise<number> {
+async function parserVersion(): Promise<string> {
     const value = await getValue(parserVersionKey) || '0';
-    const version = parseInt(value, 10);
 
-    return isNaN(version) ? 0 : version;
+    return value;
 }
 
-async function setParserVersion(version: number) {
-    await setValue(parserVersionKey, version.toString());
+async function setParserVersion(version: string) {
+    await setValue(parserVersionKey, version);
     logger().important(`Update parser version to: ${version}`);
 }
 
