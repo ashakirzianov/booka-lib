@@ -4,7 +4,7 @@ import { transliterate, filterUndefined } from '../utils';
 import { BookObject } from '../common/bookFormat';
 import { logger } from '../log';
 import { loadEpubPath } from 'booka-parser';
-import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets';
+import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets.mongo';
 
 const schema = {
     author: {
@@ -37,7 +37,7 @@ const BookSchema = new Schema(schema, { timestamps: true });
 const BookCollection: Model<BookDocument> = model<BookDocument>('Book', BookSchema);
 
 export const books = {
-    byBookIdParsed: byBookId,
+    byBookId,
     parseAndInsert,
     all,
     count,

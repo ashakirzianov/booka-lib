@@ -6,7 +6,7 @@ export const router = createRouter<LibContract>();
 
 router.get('/single', async ctx => {
     if (ctx.query.id) {
-        const book = await books.byBookIdParsed(ctx.query.id);
+        const book = await books.byBookId(ctx.query.id);
         return book
             ? {
                 success: book,
