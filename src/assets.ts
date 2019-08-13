@@ -9,32 +9,36 @@ const service = new S3();
 
 export async function uploadBookObject(bookId: string, book: BookObject) {
     const bookBody = JSON.stringify(book);
+    const key = `${bookId}.json`;
     const result = await service.putObject({
         Bucket: config().bucket.json,
-        Key: `${bookId}.json`,
+        Key: key,
         Body: bookBody,
     }).promise();
 
-    // TODO: get actual file path
-    const servicePath = undefined;
-
-    return servicePath;
+    return key;
 }
 
 export async function uploadOriginalFile(filePath: string) {
     const fileBody = await promisify(readFile)(filePath);
+    const key = basename(filePath);
     const result = await service.putObject({
         Bucket: config().bucket.original,
-        Key: basename(filePath),
+        Key: key,
         Body: fileBody,
     }).promise();
 
-    // TODO: get actual file path
-    const servicePath = undefined;
-
-    return servicePath;
+    return key;
 }
 
-export async function downloadJson(url: string): Promise<string | undefined> {
-    return undefined;
+export async function downloadJson(assetId: string): Promise<string | undefined> {
+    try {
+        const result = await service.getObject({
+            Bucket: config().bucket.json,
+            Key: assetId,
+        }).promise();
+        return result.Body as string;
+    } catch (e) {
+        return undefined;
+    }
 }

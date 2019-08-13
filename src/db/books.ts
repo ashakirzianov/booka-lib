@@ -4,7 +4,7 @@ import { transliterate, filterUndefined } from '../utils';
 import { BookObject } from '../common/bookFormat';
 import { logger } from '../log';
 import { loadEpubPath } from 'booka-parser';
-import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets.mongo';
+import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets';
 import { buildHash } from '../duplicates';
 
 const schema = {
@@ -22,11 +22,11 @@ const schema = {
         index: true,
         required: true,
     },
-    jsonUrl: {
+    jsonAssetId: {
         type: String,
         required: true,
     },
-    originalUrl: {
+    originalAssetId: {
         type: String,
     },
     hash: {
@@ -51,11 +51,11 @@ export const books = {
 
 async function byBookId(id: string) {
     const book = await BookCollection.findOne({ bookId: id }).exec();
-    if (!book || !book.jsonUrl) {
+    if (!book || !book.jsonAssetId) {
         return undefined;
     }
 
-    const json = await downloadJson(book.jsonUrl);
+    const json = await downloadJson(book.jsonAssetId);
     if (json) {
         const parsed = JSON.parse(json);
         const contract = parsed as BookObject;
@@ -75,14 +75,14 @@ async function parseAndInsert(filePath: string) {
 
     const bookId = await generateBookId(book.meta.title, book.meta.author);
 
-    const jsonRemotePath = await uploadBookObject(bookId, book);
-    if (jsonRemotePath) {
-        const originalRemotePath = await uploadOriginalFile(filePath);
+    const jsonAssetId = await uploadBookObject(bookId, book);
+    if (jsonAssetId) {
+        const originalAssetId = await uploadOriginalFile(filePath);
         const bookDocument: DbBook = {
             title: book.meta.title,
             author: book.meta.author,
-            jsonUrl: jsonRemotePath,
-            originalUrl: originalRemotePath,
+            jsonAssetId: jsonAssetId,
+            originalAssetId: originalAssetId,
             bookId: bookId,
             hash: duplicate.hash,
         };
