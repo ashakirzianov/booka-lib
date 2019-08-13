@@ -5,6 +5,7 @@ import { BookObject } from '../common/bookFormat';
 import { logger } from '../log';
 import { loadEpubPath } from 'booka-parser';
 import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets.mongo';
+import { buildHash } from '../duplicates';
 
 const schema = {
     author: {
@@ -27,6 +28,10 @@ const schema = {
     },
     originalUrl: {
         type: String,
+    },
+    hash: {
+        type: String,
+        required: true,
     },
 };
 
@@ -63,6 +68,11 @@ async function byBookId(id: string) {
 
 async function parseAndInsert(filePath: string) {
     const book = await loadEpubPath(filePath);
+    const duplicate = await checkForDuplicates(book);
+    if (duplicate.exist) {
+        return duplicate.document.bookId;
+    }
+
     const bookId = await generateBookId(book.meta.title, book.meta.author);
 
     const jsonRemotePath = await uploadBookObject(bookId, book);
@@ -74,6 +84,7 @@ async function parseAndInsert(filePath: string) {
             jsonUrl: jsonRemotePath,
             originalUrl: originalRemotePath,
             bookId: bookId,
+            hash: duplicate.hash,
         };
 
         const inserted = await BookCollection.insertMany(bookDocument);
@@ -101,6 +112,23 @@ async function all() {
     );
 
     return filterUndefined(allMetas);
+}
+
+async function checkForDuplicates(book: BookObject) {
+    const hash = await buildHash(book);
+    const existing = await BookCollection.findOne({ hash }).exec();
+
+    if (existing) {
+        return {
+            exist: true as const,
+            document: existing,
+        };
+    } else {
+        return {
+            exist: false as const,
+            hash,
+        };
+    }
 }
 
 async function count() {
