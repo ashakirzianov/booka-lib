@@ -1,4 +1,4 @@
-import { parseAndInsert, books } from './db';
+import { books } from './db';
 import { LibContract } from './libContract';
 import { createRouter } from './common/router';
 
@@ -32,7 +32,7 @@ router.get('/all', async () => {
 router.post('/upload', async ctx => {
     const book = ctx.request.files.book;
     if (book) {
-        const bookId = await parseAndInsert(book.path);
+        const bookId = await books.parseAndInsert(book.path);
         return bookId
             ? { success: bookId }
             : { fail: `Couldn't parse book` };

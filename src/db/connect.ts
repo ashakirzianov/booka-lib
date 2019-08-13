@@ -35,21 +35,8 @@ async function seedImpl(pv: string) {
         const promises = files
             // .slice(2, 4)
             .map(path => epubLocation + path)
-            .map(parseAndInsert);
+            .map(books.parseAndInsert);
         await Promise.all(promises);
         info.setParserVersion(pv);
-    }
-}
-
-export async function parseAndInsert(fullPath: string) {
-    try {
-        const book = await logTimeAsync(
-            `Parse: ${fullPath}`,
-            () => loadEpubPath(fullPath)
-        );
-        return await books.insertParsed(book);
-    } catch (e) {
-        logger().warn(`While parsing '${fullPath}' error: ${e}`);
-        return undefined;
     }
 }
