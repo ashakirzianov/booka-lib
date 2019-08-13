@@ -4,9 +4,17 @@ export function config(): Config {
         : productionConfig();
 }
 
+const commonConfig: Config = {
+    defaultPort: 3141,
+    bucket: {
+        json: 'booka-lib-json',
+        original: 'booka-lib-original',
+    },
+};
+
 function debugConfig(): Config {
     return {
-        defaultPort: 3141,
+        ...commonConfig,
         // ssl: {
         //     keyPath: 'server.key',
         //     certPath: 'server.crt',
@@ -16,7 +24,7 @@ function debugConfig(): Config {
 
 function productionConfig(): Config {
     return {
-        defaultPort: 3145,
+        ...commonConfig,
     };
 }
 
@@ -31,5 +39,9 @@ export type SslConfig = {
 
 export type Config = {
     defaultPort: number,
+    bucket: {
+        json: string,
+        original: string,
+    },
     ssl?: SslConfig,
 };

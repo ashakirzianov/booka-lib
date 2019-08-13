@@ -27,6 +27,7 @@
         "coverpage",
         "deserialize",
         "diags",
+        "dups",
         "epub",
         "fbtoken",
         "multiline",
