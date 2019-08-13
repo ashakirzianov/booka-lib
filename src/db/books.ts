@@ -3,6 +3,8 @@ import { TypeFromSchema } from '../common/mongooseUtils';
 import { transliterate, filterUndefined } from '../utils';
 import { BookObject } from '../common/bookFormat';
 import { logger } from '../log';
+import { loadEpubPath } from 'booka-parser';
+import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets';
 
 const schema = {
     author: {
@@ -19,52 +21,69 @@ const schema = {
         index: true,
         required: true,
     },
-    raw: {
+    jsonUrl: {
+        type: String,
+        required: true,
+    },
+    originalUrl: {
         type: String,
     },
 };
 
-export type Book = TypeFromSchema<typeof schema>;
-type BookDocument = Book & Document;
+export type DbBook = TypeFromSchema<typeof schema>;
+type BookDocument = DbBook & Document;
 
 const BookSchema = new Schema(schema, { timestamps: true });
 const BookCollection: Model<BookDocument> = model<BookDocument>('Book', BookSchema);
 
 export const books = {
-    byBookIdParsed,
-    insertParsed,
+    byBookIdParsed: byBookId,
+    parseAndInsert,
     all,
     count,
     removeAll,
 };
 
-async function byBookIdParsed(id: string) {
+async function byBookId(id: string) {
     const book = await BookCollection.findOne({ bookId: id }).exec();
-    if (!book || !book.raw) {
+    if (!book || !book.jsonUrl) {
         return undefined;
     }
-    const parsed = JSON.parse(book.raw);
-    const contract = parsed as BookObject;
 
-    return contract;
+    const json = await downloadJson(book.jsonUrl);
+    if (json) {
+        const parsed = JSON.parse(json);
+        const contract = parsed as BookObject;
+
+        return contract;
+    } else {
+        return undefined;
+    }
 }
 
-async function insertParsed(book: BookObject) {
+async function parseAndInsert(filePath: string) {
+    const book = await loadEpubPath(filePath);
     const bookId = await generateBookId(book.meta.title, book.meta.author);
-    const bookDocument: Book = {
-        title: book.meta.title,
-        author: book.meta.author,
-        raw: JSON.stringify(book),
-        bookId: bookId,
-    };
 
-    const inserted = await BookCollection.insertMany(bookDocument);
-    if (inserted) {
-        logger().important('Inserted book for id: ' + bookId);
-        return bookId;
-    } else {
-        throw new Error(`Couldn't insert book for id: '${bookId}'`);
+    const jsonRemotePath = await uploadBookObject(bookId, book);
+    if (jsonRemotePath) {
+        const originalRemotePath = await uploadOriginalFile(filePath);
+        const bookDocument: DbBook = {
+            title: book.meta.title,
+            author: book.meta.author,
+            jsonUrl: jsonRemotePath,
+            originalUrl: originalRemotePath,
+            bookId: bookId,
+        };
+
+        const inserted = await BookCollection.insertMany(bookDocument);
+        if (inserted) {
+            logger().important('Inserted book for id: ' + bookId);
+            return bookId;
+        }
     }
+
+    throw new Error(`Couldn't insert book for id: '${bookId}'`);
 }
 
 async function all() {
