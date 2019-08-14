@@ -1,11 +1,12 @@
 import * as Mongoose from 'mongoose';
-import { loadEpubPath, parserVersion } from 'booka-parser';
+import { parserVersion } from 'booka-parser';
 import { readdir } from 'fs';
 
 import { promisify } from 'util';
 import { books } from './books';
 import { info } from './info';
-import { logger, logTimeAsync } from '../log';
+import { logTimeAsync } from '../log';
+import { removeAllAssets } from '../assets.mongo';
 
 const epubLocation = 'public/epub/';
 
@@ -25,8 +26,9 @@ async function seed() {
 
 async function seedImpl(pv: string) {
     const storedVersion = await info.parserVersion();
+    const needCleanup = pv !== storedVersion;
     if (pv !== storedVersion) {
-        await books.removeAll();
+        await cleanup();
     }
 
     const count = await books.count();
@@ -37,6 +39,14 @@ async function seedImpl(pv: string) {
             .map(path => epubLocation + path)
             .map(books.parseAndInsert);
         await Promise.all(promises);
-        info.setParserVersion(pv);
     }
+
+    if (needCleanup) {
+        await info.setParserVersion(pv);
+    }
+}
+
+async function cleanup() {
+    await books.removeAll();
+    await removeAllAssets();
 }

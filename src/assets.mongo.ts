@@ -34,6 +34,10 @@ async function downloadJson(url: string): Promise<string | undefined> {
         : undefined;
 }
 
+export async function removeAllAssets() {
+    await JsonCollection.deleteMany({});
+}
+
 const schema = {
     json: {
         type: String,
