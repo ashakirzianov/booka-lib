@@ -4,8 +4,14 @@ import { transliterate, filterUndefined } from '../utils';
 import { BookObject } from '../common/bookFormat';
 import { logger } from '../log';
 import { loadEpubPath } from 'booka-parser';
-import { uploadBookObject, uploadOriginalFile, downloadJson } from '../assets';
+import { assets as s3assets } from '../assets';
+import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
+import { config } from '../config';
+
+const assets = config().assets === 'mongo'
+    ? mongoAssets
+    : s3assets;
 
 const schema = {
     author: {
@@ -55,7 +61,7 @@ async function byBookId(id: string) {
         return undefined;
     }
 
-    const json = await downloadJson(book.jsonAssetId);
+    const json = await assets.downloadJson(book.jsonAssetId);
     if (json) {
         const parsed = JSON.parse(json);
         const contract = parsed as BookObject;
@@ -75,9 +81,9 @@ async function parseAndInsert(filePath: string) {
 
     const bookId = await generateBookId(book.meta.title, book.meta.author);
 
-    const jsonAssetId = await uploadBookObject(bookId, book);
+    const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
-        const originalAssetId = await uploadOriginalFile(filePath);
+        const originalAssetId = await assets.uploadOriginalFile(filePath);
         const bookDocument: DbBook = {
             title: book.meta.title,
             author: book.meta.author,

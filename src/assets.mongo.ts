@@ -1,8 +1,15 @@
 import { Model, Document, Schema, model } from 'mongoose';
 import { TypeFromSchema } from './common/mongooseUtils';
 import { BookObject } from './common/bookFormat';
+import { AssetsManager } from './assets';
 
-export async function uploadBookObject(bookId: string, book: BookObject) {
+export const assets: AssetsManager = {
+    uploadBookObject,
+    uploadOriginalFile,
+    downloadJson,
+};
+
+async function uploadBookObject(bookId: string, book: BookObject) {
     const bookBody = JSON.stringify(book);
     const result = await JsonCollection.insertMany({
         json: bookBody,
@@ -16,11 +23,11 @@ export async function uploadBookObject(bookId: string, book: BookObject) {
     }
 }
 
-export async function uploadOriginalFile(filePath: string) {
+async function uploadOriginalFile(filePath: string) {
     return undefined;
 }
 
-export async function downloadJson(url: string): Promise<string | undefined> {
+async function downloadJson(url: string): Promise<string | undefined> {
     const doc = await JsonCollection.findById(url).exec();
     return doc
         ? doc.json

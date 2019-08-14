@@ -5,6 +5,7 @@ export function config(): Config {
 }
 
 const commonConfig: Config = {
+    assets: 's3',
     defaultPort: 3141,
     bucket: {
         json: 'booka-lib-json',
@@ -15,6 +16,7 @@ const commonConfig: Config = {
 function debugConfig(): Config {
     return {
         ...commonConfig,
+        assets: 'mongo',
         // ssl: {
         //     keyPath: 'server.key',
         //     certPath: 'server.crt',
@@ -38,6 +40,7 @@ export type SslConfig = {
 };
 
 export type Config = {
+    assets: 's3' | 'mongo',
     defaultPort: number,
     bucket: {
         json: string,
