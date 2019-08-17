@@ -52,13 +52,14 @@ async function uploadBookImage(bookId: string, imageId: string, image: Buffer) {
         const fileBody = image;
         const key = `img-${bookId}-${imageId}`;
         const result = await service.putObject({
-            Bucket: config().bucket.original,
+            Bucket: config().bucket.images,
             Key: key,
             Body: fileBody,
         }).promise();
 
-        // TODO: return url
-        return key;
+        const url = buildUrl(config().bucket.images, key);
+
+        return url;
     } catch (e) {
         return undefined;
     }
@@ -74,4 +75,8 @@ async function downloadJson(assetId: string): Promise<string | undefined> {
     } catch (e) {
         return undefined;
     }
+}
+
+function buildUrl(bucket: string, key: string): string {
+    return `https://${bucket}.s3.amazonaws.com/${key}`;
 }
