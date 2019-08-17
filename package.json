@@ -7,7 +7,7 @@
     "clean": "rm -rf dist/",
     "lint": "tslint -c tslint.json -p tsconfig.json",
     "build-ts": "tsc",
-    "build": "npm run build-ts & npm run lint",
+    "build": "npm run build-ts && npm run lint",
     "debug": "tsc -w & cross-env NODE_ENV=development nodemon dist/index.js",
     "serve": "node dist/index.js",
     "start": "npm run serve",
