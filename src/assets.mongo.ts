@@ -7,6 +7,7 @@ export const assets: AssetsManager = {
     uploadBookObject,
     uploadOriginalFile,
     downloadJson,
+    uploadBookImage: async () => undefined,
 };
 
 async function uploadBookObject(bookId: string, book: BookObject) {

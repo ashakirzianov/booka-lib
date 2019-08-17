@@ -10,6 +10,7 @@ const commonConfig: Config = {
     bucket: {
         json: 'booka-lib-json',
         original: 'booka-lib-original',
+        images: 'booka-images',
     },
 };
 
@@ -45,6 +46,7 @@ export type Config = {
     bucket: {
         json: string,
         original: string,
+        images: string,
     },
     ssl?: SslConfig,
 };

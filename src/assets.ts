@@ -8,6 +8,7 @@ import { promisify } from 'util';
 export const assets = {
     uploadBookObject,
     uploadOriginalFile,
+    uploadBookImage,
     downloadJson,
 };
 export type AssetsManager = typeof assets;
@@ -40,6 +41,25 @@ async function uploadOriginalFile(filePath: string) {
             Body: fileBody,
         }).promise();
 
+        return key;
+    } catch (e) {
+        return undefined;
+    }
+}
+
+// TODO: use actual Image type
+type ImageType = any;
+async function uploadBookImage(bookId: string, imageId: string, image: ImageType) {
+    try {
+        const fileBody = image;
+        const key = `img-${bookId}-${imageId}`;
+        const result = await service.putObject({
+            Bucket: config().bucket.original,
+            Key: key,
+            Body: fileBody,
+        }).promise();
+
+        // TODO: return url
         return key;
     } catch (e) {
         return undefined;
