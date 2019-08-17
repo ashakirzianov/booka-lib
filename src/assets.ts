@@ -47,9 +47,7 @@ async function uploadOriginalFile(filePath: string) {
     }
 }
 
-// TODO: use actual Image type
-type ImageType = any;
-async function uploadBookImage(bookId: string, imageId: string, image: ImageType) {
+async function uploadBookImage(bookId: string, imageId: string, image: Buffer) {
     try {
         const fileBody = image;
         const key = `img-${bookId}-${imageId}`;

@@ -1,11 +1,15 @@
 import {
     BookNode, HasSubnodes, ChapterNode, ParagraphNode, Span,
     SimpleSpan, FootnoteSpan, AttributedSpan, CompoundSpan,
-    AttributeName, VolumeNode,
+    AttributeName, VolumeNode, ImageNode, ImageId,
 } from '../common/bookFormat';
 
 export function hasSubnodes(bn: BookNode): bn is HasSubnodes {
     return bn.node === 'chapter' || bn.node === 'volume';
+}
+
+export function isVolume(bn: BookNode): bn is VolumeNode {
+    return bn.node === 'volume';
 }
 
 export function isChapter(bn: BookNode): bn is ChapterNode {
@@ -14,6 +18,10 @@ export function isChapter(bn: BookNode): bn is ChapterNode {
 
 export function isParagraph(bn: BookNode): bn is ParagraphNode {
     return bn.node === 'paragraph';
+}
+
+export function isImage(bn: BookNode): bn is ImageNode {
+    return bn.node === 'image';
 }
 
 export function isSimple(span: Span): span is SimpleSpan {
@@ -80,4 +88,25 @@ export function volumeToString(volume: VolumeNode) {
 
 export function nodeToString(bn: BookNode) {
     return JSON.stringify(bn);
+}
+
+export function collectImageIds(bn: BookNode): ImageId[] {
+    switch (bn.node) {
+        case 'chapter':
+            return bn.nodes
+                .map(collectImageIds)
+                .reduce((all, one) => all.concat(one), []);
+        case 'image':
+            return [bn.id];
+        case 'paragraph':
+            return [];
+        case 'volume':
+            bn.nodes
+                .map(collectImageIds)
+                .reduce((all, one) => all.concat(one), [])
+                .concat(bn.meta.coverImageId ? [bn.meta.coverImageId] : []);
+        default:
+            // TODO: assert never?
+            return [];
+    }
 }

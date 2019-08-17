@@ -1,7 +1,7 @@
 import { Model, Document, Schema, model } from 'mongoose';
 import { TypeFromSchema } from '../common/mongooseUtils';
-import { transliterate, filterUndefined } from '../utils';
-import { BookObject, VolumeNode } from '../common/bookFormat';
+import { transliterate, filterUndefined, collectImageIds } from '../utils';
+import { BookObject, VolumeNode, ImageId } from '../common/bookFormat';
 import { logger } from '../log';
 import { parseEpubAtPath, Image } from 'booka-parser';
 import { assets as s3assets } from '../assets';
@@ -86,7 +86,7 @@ async function parseAndInsert(filePath: string) {
 
     const bookId = await generateBookId(volume.meta.title, volume.meta.author);
 
-    const book = await buildBookObject(volume, parsingResult.resolveImage);
+    const book = await buildBookObject(bookId, volume, parsingResult.resolveImage);
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(filePath);
@@ -127,15 +127,43 @@ async function all() {
 }
 
 async function buildBookObject(
+    bookId: string,
     volume: VolumeNode,
     imageResolver: (id: string) => Promise<Image | undefined>,
 ): Promise<BookObject> {
+    const imageIds = collectImageIds(volume);
+    const imagesDic: { [k: string]: string } = {};
+    for (const id of imageIds) {
+        // TODO: report errors
+        const imageId = id.reference;
+        const image = await imageResolver(imageId);
+        if (image) {
+            const imageUrl = await assets.uploadBookImage(bookId, imageId, image.buffer);
+            if (imageUrl) {
+                imagesDic[imageId] = imageUrl;
+            }
+        }
+    }
     return {
         volume: volume,
         idDictionary: {
-            image: {},
+            image: imagesDic,
         },
     };
+}
+
+async function resolveAndUploadImage(
+    bookId: string,
+    imageId: ImageId,
+    imageResolver: (id: string) => Promise<Image | undefined>,
+) {
+    const image = await imageResolver(imageId.reference);
+    if (!image) {
+        return undefined;
+    }
+
+    const imageUrl = await assets.uploadBookImage(bookId, imageId.reference, image.buffer);
+    return imageUrl;
 }
 
 async function checkForDuplicates(volume: VolumeNode) {
