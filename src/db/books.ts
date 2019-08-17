@@ -1,9 +1,9 @@
 import { Model, Document, Schema, model } from 'mongoose';
 import { TypeFromSchema } from '../common/mongooseUtils';
 import { transliterate, filterUndefined } from '../utils';
-import { BookObject } from '../common/bookFormat';
+import { BookObject, VolumeNode } from '../common/bookFormat';
 import { logger } from '../log';
-import { loadEpubPath } from 'booka-parser';
+import { parseEpubAtPath, Image } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
@@ -73,20 +73,26 @@ async function byBookId(id: string) {
 }
 
 async function parseAndInsert(filePath: string) {
-    const book = await loadEpubPath(filePath);
-    const duplicate = await checkForDuplicates(book);
+    const parsingResult = await parseEpubAtPath(filePath);
+    if (!parsingResult.success) {
+        throw new Error(`Couldn't parse book at path: '${filePath}'`);
+    }
+
+    const volume = parsingResult.volume;
+    const duplicate = await checkForDuplicates(volume);
     if (duplicate.exist) {
         return duplicate.document.bookId;
     }
 
-    const bookId = await generateBookId(book.meta.title, book.meta.author);
+    const bookId = await generateBookId(volume.meta.title, volume.meta.author);
 
+    const book = await buildBookObject(volume, parsingResult.resolveImage);
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(filePath);
         const bookDocument: DbBook = {
-            title: book.meta.title,
-            author: book.meta.author,
+            title: book.volume.meta.title,
+            author: book.volume.meta.author,
             jsonAssetId: jsonAssetId,
             originalAssetId: originalAssetId,
             bookId: bookId,
@@ -120,8 +126,20 @@ async function all() {
     return filterUndefined(allMetas);
 }
 
-async function checkForDuplicates(book: BookObject) {
-    const hash = await buildHash(book);
+async function buildBookObject(
+    volume: VolumeNode,
+    imageResolver: (id: string) => Promise<Image | undefined>,
+): Promise<BookObject> {
+    return {
+        volume: volume,
+        idDictionary: {
+            image: {},
+        },
+    };
+}
+
+async function checkForDuplicates(volume: VolumeNode) {
+    const hash = await buildHash(volume);
     const existing = await BookCollection.findOne({ hash }).exec();
 
     if (existing) {
