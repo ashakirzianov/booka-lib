@@ -152,20 +152,6 @@ async function buildBookObject(
     };
 }
 
-async function resolveAndUploadImage(
-    bookId: string,
-    imageId: ImageId,
-    imageResolver: (id: string) => Promise<Image | undefined>,
-) {
-    const image = await imageResolver(imageId.reference);
-    if (!image) {
-        return undefined;
-    }
-
-    const imageUrl = await assets.uploadBookImage(bookId, imageId.reference, image.buffer);
-    return imageUrl;
-}
-
 async function checkForDuplicates(volume: VolumeNode) {
     const hash = await buildHash(volume);
     const existing = await BookCollection.findOne({ hash }).exec();
@@ -174,6 +160,7 @@ async function checkForDuplicates(volume: VolumeNode) {
         return {
             exist: true as const,
             document: existing,
+            hash,
         };
     } else {
         return {

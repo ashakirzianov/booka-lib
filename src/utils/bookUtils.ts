@@ -101,7 +101,7 @@ export function collectImageIds(bn: BookNode): ImageId[] {
         case 'paragraph':
             return [];
         case 'volume':
-            bn.nodes
+            return bn.nodes
                 .map(collectImageIds)
                 .reduce((all, one) => all.concat(one), [])
                 .concat(bn.meta.coverImageId ? [bn.meta.coverImageId] : []);
