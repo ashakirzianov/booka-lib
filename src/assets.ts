@@ -1,7 +1,6 @@
-import { extname } from 'path';
 import { readFile } from 'fs';
 import { S3 } from 'aws-sdk';
-import { BookObject } from './common/bookFormat';
+import { BookObject } from 'booka-common';
 import { config } from './config';
 import { promisify } from 'util';
 

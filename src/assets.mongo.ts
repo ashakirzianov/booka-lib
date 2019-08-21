@@ -1,6 +1,5 @@
 import { Model, Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from './common/mongooseUtils';
-import { BookObject } from './common/bookFormat';
+import { TypeFromSchema, BookObject } from 'booka-common';
 import { AssetsManager } from './assets';
 
 export const assets: AssetsManager = {

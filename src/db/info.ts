@@ -1,5 +1,5 @@
 import { Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from '../common/mongooseUtils';
+import { TypeFromSchema } from 'booka-common';
 import { logger } from '../log';
 
 const schema = {

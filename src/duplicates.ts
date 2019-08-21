@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import { VolumeNode } from './common/bookFormat';
+import { VolumeNode } from 'booka-common';
 
 export async function buildHash(book: VolumeNode) {
     const input = extractString(book);

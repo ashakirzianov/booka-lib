@@ -1,7 +1,8 @@
 import { Model, Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from '../common/mongooseUtils';
-import { transliterate, filterUndefined, collectImageIds } from '../utils';
-import { BookObject, VolumeNode, ImageId } from '../common/bookFormat';
+import {
+    TypeFromSchema, BookObject, VolumeNode, collectImageIds,
+} from 'booka-common';
+import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
 import { parseEpubAtPath, Image } from 'booka-parser';
 import { assets as s3assets } from '../assets';
