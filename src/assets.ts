@@ -1,4 +1,4 @@
-import { basename } from 'path';
+import { extname } from 'path';
 import { readFile } from 'fs';
 import { S3 } from 'aws-sdk';
 import { BookObject } from './common/bookFormat';
@@ -31,10 +31,10 @@ async function uploadBookObject(bookId: string, book: BookObject) {
     }
 }
 
-async function uploadOriginalFile(filePath: string) {
+async function uploadOriginalFile(bookId: string, filePath: string) {
     try {
         const fileBody = await promisify(readFile)(filePath);
-        const key = basename(filePath);
+        const key = `${bookId}`;
         const result = await service.putObject({
             Bucket: config().bucket.original,
             Key: key,

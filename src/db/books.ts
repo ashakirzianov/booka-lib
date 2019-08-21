@@ -89,7 +89,7 @@ async function parseAndInsert(filePath: string) {
     const book = await buildBookObject(bookId, volume, parsingResult.resolveImage);
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
-        const originalAssetId = await assets.uploadOriginalFile(filePath);
+        const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
         const bookDocument: DbBook = {
             title: book.volume.meta.title,
             author: book.volume.meta.author,

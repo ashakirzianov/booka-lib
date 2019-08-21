@@ -24,7 +24,7 @@ async function uploadBookObject(bookId: string, book: BookObject) {
     }
 }
 
-async function uploadOriginalFile(filePath: string) {
+async function uploadOriginalFile(bookId: string, filePath: string) {
     return undefined;
 }
 
