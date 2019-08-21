@@ -1,5 +1,6 @@
 import { books } from './db';
-import { LibContract, createRouter } from 'booka-common';
+import { LibContract } from 'booka-common';
+import { createRouter } from './back-utils';
 
 export const router = createRouter<LibContract>();
 
