@@ -23,6 +23,9 @@ const schema = {
         index: true,
         required: true,
     },
+    cover: {
+        type: String,
+    },
     bookId: {
         type: String,
         index: true,
@@ -90,9 +93,14 @@ async function parseAndInsert(filePath: string) {
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
+        const coverImageId = book.volume.meta.coverImageId;
+        const coverUrl = coverImageId
+            ? book.idDictionary.image[coverImageId.reference]
+            : undefined;
         const bookDocument: DbBook = {
             title: book.volume.meta.title,
             author: book.volume.meta.author,
+            cover: coverUrl,
             jsonAssetId: jsonAssetId,
             originalAssetId: originalAssetId,
             bookId: bookId,
@@ -111,13 +119,14 @@ async function parseAndInsert(filePath: string) {
 
 async function all() {
     const bookMetas = await BookCollection
-        .find({}, ['title', 'author', 'bookId'])
+        .find({}, ['title', 'author', 'bookId', 'cover'])
         .exec();
     const allMetas = bookMetas.map(
         book => book.id
             ? {
                 author: book.author,
                 title: book.title,
+                cover: book.cover,
                 id: book.bookId,
             }
             : undefined
