@@ -1,6 +1,6 @@
 import { Model, Document, Schema, model } from 'mongoose';
 import {
-    TypeFromSchema, BookObject, VolumeNode, collectImageIds,
+    BookObject, VolumeNode, collectImageIds,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
@@ -9,6 +9,7 @@ import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
 import { config } from '../config';
+import { TypeFromSchema } from '../back-utils';
 
 const assets = config().assets === 'mongo'
     ? mongoAssets

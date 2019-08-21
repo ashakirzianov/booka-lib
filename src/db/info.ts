@@ -1,6 +1,6 @@
 import { Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from 'booka-common';
 import { logger } from '../log';
+import { TypeFromSchema } from '../back-utils';
 
 const schema = {
     key: {
