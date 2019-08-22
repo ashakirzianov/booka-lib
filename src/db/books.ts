@@ -1,13 +1,15 @@
 import { Model, Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from '../common/mongooseUtils';
+import {
+    BookObject, VolumeNode, collectImageIds,
+} from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
-import { BookObject } from '../common/bookFormat';
 import { logger } from '../log';
-import { loadEpubPath } from 'booka-parser';
+import { parseEpubAtPath, Image } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
 import { config } from '../config';
+import { TypeFromSchema } from '../back-utils';
 
 const assets = config().assets === 'mongo'
     ? mongoAssets
@@ -22,6 +24,9 @@ const schema = {
         type: String,
         index: true,
         required: true,
+    },
+    cover: {
+        type: String,
     },
     bookId: {
         type: String,
@@ -73,20 +78,31 @@ async function byBookId(id: string) {
 }
 
 async function parseAndInsert(filePath: string) {
-    const book = await loadEpubPath(filePath);
-    const duplicate = await checkForDuplicates(book);
+    const parsingResult = await parseEpubAtPath(filePath);
+    if (!parsingResult.success) {
+        throw new Error(`Couldn't parse book at path: '${filePath}'`);
+    }
+
+    const volume = parsingResult.volume;
+    const duplicate = await checkForDuplicates(volume);
     if (duplicate.exist) {
         return duplicate.document.bookId;
     }
 
-    const bookId = await generateBookId(book.meta.title, book.meta.author);
+    const bookId = await generateBookId(volume.meta.title, volume.meta.author);
 
+    const book = await buildBookObject(bookId, volume, parsingResult.resolveImage);
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
-        const originalAssetId = await assets.uploadOriginalFile(filePath);
+        const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
+        const coverImageId = book.volume.meta.coverImageId;
+        const coverUrl = coverImageId
+            ? book.idDictionary.image[coverImageId.reference]
+            : undefined;
         const bookDocument: DbBook = {
-            title: book.meta.title,
-            author: book.meta.author,
+            title: book.volume.meta.title,
+            author: book.volume.meta.author,
+            cover: coverUrl,
             jsonAssetId: jsonAssetId,
             originalAssetId: originalAssetId,
             bookId: bookId,
@@ -105,13 +121,14 @@ async function parseAndInsert(filePath: string) {
 
 async function all() {
     const bookMetas = await BookCollection
-        .find({}, ['title', 'author', 'bookId'])
+        .find({}, ['title', 'author', 'bookId', 'cover'])
         .exec();
     const allMetas = bookMetas.map(
         book => book.id
             ? {
                 author: book.author,
                 title: book.title,
+                cover: book.cover,
                 id: book.bookId,
             }
             : undefined
@@ -120,14 +137,41 @@ async function all() {
     return filterUndefined(allMetas);
 }
 
-async function checkForDuplicates(book: BookObject) {
-    const hash = await buildHash(book);
+async function buildBookObject(
+    bookId: string,
+    volume: VolumeNode,
+    imageResolver: (id: string) => Promise<Image | undefined>,
+): Promise<BookObject> {
+    const imageIds = collectImageIds(volume);
+    const imagesDic: { [k: string]: string } = {};
+    for (const id of imageIds) {
+        // TODO: report errors
+        const imageId = id.reference;
+        const image = await imageResolver(imageId);
+        if (image) {
+            const imageUrl = await assets.uploadBookImage(bookId, imageId, image.buffer);
+            if (imageUrl) {
+                imagesDic[imageId] = imageUrl;
+            }
+        }
+    }
+    return {
+        volume: volume,
+        idDictionary: {
+            image: imagesDic,
+        },
+    };
+}
+
+async function checkForDuplicates(volume: VolumeNode) {
+    const hash = await buildHash(volume);
     const existing = await BookCollection.findOne({ hash }).exec();
 
     if (existing) {
         return {
             exist: true as const,
             document: existing,
+            hash,
         };
     } else {
         return {

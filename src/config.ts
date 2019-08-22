@@ -10,13 +10,14 @@ const commonConfig: Config = {
     bucket: {
         json: 'booka-lib-json',
         original: 'booka-lib-original',
+        images: 'booka-lib-images',
     },
 };
 
 function debugConfig(): Config {
     return {
         ...commonConfig,
-        assets: 'mongo',
+        // assets: 'mongo',
         // ssl: {
         //     keyPath: 'server.key',
         //     certPath: 'server.crt',
@@ -45,6 +46,7 @@ export type Config = {
     bucket: {
         json: string,
         original: string,
+        images: string,
     },
     ssl?: SslConfig,
 };

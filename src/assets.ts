@@ -1,13 +1,13 @@
-import { basename } from 'path';
 import { readFile } from 'fs';
 import { S3 } from 'aws-sdk';
-import { BookObject } from './common/bookFormat';
+import { BookObject } from 'booka-common';
 import { config } from './config';
 import { promisify } from 'util';
 
 export const assets = {
     uploadBookObject,
     uploadOriginalFile,
+    uploadBookImage,
     downloadJson,
 };
 export type AssetsManager = typeof assets;
@@ -30,10 +30,10 @@ async function uploadBookObject(bookId: string, book: BookObject) {
     }
 }
 
-async function uploadOriginalFile(filePath: string) {
+async function uploadOriginalFile(bookId: string, filePath: string) {
     try {
         const fileBody = await promisify(readFile)(filePath);
-        const key = basename(filePath);
+        const key = `${bookId}`;
         const result = await service.putObject({
             Bucket: config().bucket.original,
             Key: key,
@@ -41,6 +41,24 @@ async function uploadOriginalFile(filePath: string) {
         }).promise();
 
         return key;
+    } catch (e) {
+        return undefined;
+    }
+}
+
+async function uploadBookImage(bookId: string, imageId: string, image: Buffer) {
+    try {
+        const fileBody = image;
+        const key = `img-${bookId}-${imageId}`;
+        const result = await service.putObject({
+            Bucket: config().bucket.images,
+            Key: key,
+            Body: fileBody,
+        }).promise();
+
+        const url = buildUrl(config().bucket.images, key);
+
+        return url;
     } catch (e) {
         return undefined;
     }
@@ -56,4 +74,8 @@ async function downloadJson(assetId: string): Promise<string | undefined> {
     } catch (e) {
         return undefined;
     }
+}
+
+function buildUrl(bucket: string, key: string): string {
+    return `https://${bucket}.s3.amazonaws.com/${key}`;
 }

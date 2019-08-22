@@ -1,12 +1,13 @@
 import { Model, Document, Schema, model } from 'mongoose';
-import { TypeFromSchema } from './common/mongooseUtils';
-import { BookObject } from './common/bookFormat';
+import { BookObject } from 'booka-common';
 import { AssetsManager } from './assets';
+import { TypeFromSchema } from './back-utils';
 
 export const assets: AssetsManager = {
     uploadBookObject,
     uploadOriginalFile,
     downloadJson,
+    uploadBookImage: async () => undefined,
 };
 
 async function uploadBookObject(bookId: string, book: BookObject) {
@@ -23,7 +24,7 @@ async function uploadBookObject(bookId: string, book: BookObject) {
     }
 }
 
-async function uploadOriginalFile(filePath: string) {
+async function uploadOriginalFile(bookId: string, filePath: string) {
     return undefined;
 }
 
