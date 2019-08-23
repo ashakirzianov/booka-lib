@@ -1,4 +1,3 @@
-import { Model, Document, Schema, model } from 'mongoose';
 import {
     BookObject, VolumeNode, collectImageIds,
 } from 'booka-common';
@@ -9,7 +8,7 @@ import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
 import { config } from '../config';
-import { TypeFromSchema } from '../back-utils';
+import { TypeFromSchema, model } from '../back-utils';
 
 const assets = config().assets === 'mongo'
     ? mongoAssets
@@ -25,9 +24,7 @@ const schema = {
         index: true,
         required: true,
     },
-    cover: {
-        type: String,
-    },
+    cover: String,
     bookId: {
         type: String,
         index: true,
@@ -37,20 +34,15 @@ const schema = {
         type: String,
         required: true,
     },
-    originalAssetId: {
-        type: String,
-    },
+    originalAssetId: String,
     hash: {
         type: String,
         required: true,
     },
-};
+} as const;
 
 export type DbBook = TypeFromSchema<typeof schema>;
-type BookDocument = DbBook & Document;
-
-const BookSchema = new Schema(schema, { timestamps: true });
-const BookCollection: Model<BookDocument> = model<BookDocument>('Book', BookSchema);
+const BookCollection = model('Book', schema);
 
 export const books = {
     byBookId,
