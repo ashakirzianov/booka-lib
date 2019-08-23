@@ -1,4 +1,3 @@
-import { Model, Document, Schema, model } from 'mongoose';
 import {
     BookObject, VolumeNode, collectImageIds,
 } from 'booka-common';
@@ -9,7 +8,7 @@ import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
 import { config } from '../config';
-import { TypeFromSchema } from '../back-utils';
+import { TypeFromSchema, model } from '../back-utils';
 
 const assets = config().assets === 'mongo'
     ? mongoAssets
@@ -25,9 +24,7 @@ const schema = {
         index: true,
         required: true,
     },
-    cover: {
-        type: String,
-    },
+    cover: String,
     bookId: {
         type: String,
         index: true,
@@ -37,20 +34,15 @@ const schema = {
         type: String,
         required: true,
     },
-    originalAssetId: {
-        type: String,
-    },
+    originalAssetId: String,
     hash: {
         type: String,
         required: true,
     },
-};
+} as const;
 
 export type DbBook = TypeFromSchema<typeof schema>;
-type BookDocument = DbBook & Document;
-
-const BookSchema = new Schema(schema, { timestamps: true });
-const BookCollection: Model<BookDocument> = model<BookDocument>('Book', BookSchema);
+const docs = model('Book', schema);
 
 export const books = {
     byBookId,
@@ -61,7 +53,7 @@ export const books = {
 };
 
 async function byBookId(id: string) {
-    const book = await BookCollection.findOne({ bookId: id }).exec();
+    const book = await docs.findOne({ bookId: id }).exec();
     if (!book || !book.jsonAssetId) {
         return undefined;
     }
@@ -109,7 +101,7 @@ async function parseAndInsert(filePath: string) {
             hash: duplicate.hash,
         };
 
-        const inserted = await BookCollection.insertMany(bookDocument);
+        const inserted = await docs.insertMany(bookDocument);
         if (inserted) {
             logger().important('Inserted book for id: ' + bookId);
             return bookId;
@@ -120,7 +112,7 @@ async function parseAndInsert(filePath: string) {
 }
 
 async function all() {
-    const bookMetas = await BookCollection
+    const bookMetas = await docs
         .find({}, ['title', 'author', 'bookId', 'cover'])
         .exec();
     const allMetas = bookMetas.map(
@@ -165,7 +157,7 @@ async function buildBookObject(
 
 async function checkForDuplicates(volume: VolumeNode) {
     const hash = await buildHash(volume);
-    const existing = await BookCollection.findOne({ hash }).exec();
+    const existing = await docs.findOne({ hash }).exec();
 
     if (existing) {
         return {
@@ -182,15 +174,15 @@ async function checkForDuplicates(volume: VolumeNode) {
 }
 
 async function count() {
-    return BookCollection.countDocuments().exec();
+    return docs.countDocuments().exec();
 }
 
 async function removeAll() {
-    await BookCollection.deleteMany({});
+    await docs.deleteMany({});
 }
 
 async function isBookExists(bookId: string): Promise<boolean> {
-    const book = await BookCollection.findOne({ bookId });
+    const book = await docs.findOne({ bookId });
     return book !== null;
 }
 
