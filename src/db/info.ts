@@ -1,6 +1,5 @@
-import { Document, Schema, model } from 'mongoose';
 import { logger } from '../log';
-import { TypeFromSchema } from '../back-utils';
+import { model } from '../back-utils';
 
 const schema = {
     key: {
@@ -14,11 +13,7 @@ const schema = {
     },
 };
 
-export type Info = TypeFromSchema<typeof schema>;
-type InfoDocument = Info & Document;
-
-const InfoSchema = new Schema(schema, { timestamps: true });
-const InfoCollection = model<InfoDocument>('Info', InfoSchema);
+const InfoCollection = model('Info', schema);
 
 export const info = {
     setParserVersion,
