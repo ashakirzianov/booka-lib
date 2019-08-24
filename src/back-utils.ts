@@ -93,13 +93,21 @@ export type File = {
 
 // Mongoose:
 
-import { Schema, model as modelMongoose, Document } from 'mongoose';
+import { Schema, model as modelMongoose, Document, Model } from 'mongoose';
 
 export function model<S extends SchemaDefinition>(name: string, schema: S) {
     const schemaObject = new Schema(schema);
     return modelMongoose<DocumentType<S>>(name, schemaObject);
 }
 
+export function extractDataFields<T extends Document>(doc: T): Omit<T, keyof Document> & { _id: string } {
+    const result = doc.toObject();
+    delete result['__v'];
+    return result;
+}
+
+export type DataFromModel<M extends Model<Document>> =
+    M extends Model<infer D> ? Omit<D, keyof Document> : never;
 export const ObjectId = Schema.Types.ObjectId;
 export type ObjectId = Schema.Types.ObjectId;
 type ObjectIdConstructor = typeof ObjectId;
@@ -130,8 +138,8 @@ type SchemaFieldComplex<T extends SchemaType> = {
 };
 
 type SchemaTypeSimple =
-    | StringConstructor | NumberConstructor | BooleanConstructor | ObjectConstructor
-    | ObjectIdConstructor
+    | StringConstructor | NumberConstructor | BooleanConstructor | DateConstructor
+    | ObjectConstructor | ObjectIdConstructor
     ;
 type SchemaType =
     | SchemaTypeSimple
@@ -143,6 +151,7 @@ type GetTypeSimple<T> =
     T extends StringConstructor ? string :
     T extends NumberConstructor ? number :
     T extends BooleanConstructor ? boolean :
+    T extends DateConstructor ? Date :
     T extends ObjectConstructor ? object :
     T extends ObjectIdConstructor ? string :
     never;
