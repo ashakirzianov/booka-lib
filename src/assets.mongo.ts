@@ -1,5 +1,5 @@
 import { Model, Document, Schema, model } from 'mongoose';
-import { BookObject } from 'booka-common';
+import { Book } from 'booka-common';
 import { AssetsManager } from './assets';
 import { TypeFromSchema } from './back-utils';
 
@@ -10,7 +10,7 @@ export const assets: AssetsManager = {
     uploadBookImage: async () => undefined,
 };
 
-async function uploadBookObject(bookId: string, book: BookObject) {
+async function uploadBookObject(bookId: string, book: Book) {
     const bookBody = JSON.stringify(book);
     const result = await JsonCollection.insertMany({
         json: bookBody,
