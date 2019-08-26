@@ -1,6 +1,6 @@
 import { readFile } from 'fs';
 import { S3 } from 'aws-sdk';
-import { BookObject } from 'booka-common';
+import { Book } from 'booka-common';
 import { config } from './config';
 import { promisify } from 'util';
 
@@ -14,7 +14,7 @@ export type AssetsManager = typeof assets;
 
 const service = new S3();
 
-async function uploadBookObject(bookId: string, book: BookObject) {
+async function uploadBookObject(bookId: string, book: Book) {
     try {
         const bookBody = JSON.stringify(book);
         const key = `${bookId}.json`;

@@ -1,5 +1,5 @@
 import {
-    BookObject, VolumeNode, collectImageIds,
+    Book, VolumeNode, collectImageRefs,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
@@ -61,7 +61,7 @@ async function byBookId(id: string) {
     const json = await assets.downloadJson(book.jsonAssetId);
     if (json) {
         const parsed = JSON.parse(json);
-        const contract = parsed as BookObject;
+        const contract = parsed as Book;
 
         return contract;
     } else {
@@ -89,7 +89,7 @@ async function parseAndInsert(filePath: string) {
         const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
         const coverImageId = book.volume.meta.coverImageId;
         const coverUrl = coverImageId
-            ? book.idDictionary.image[coverImageId.reference]
+            ? book.idDictionary.image[coverImageId.id]
             : undefined;
         const bookDocument: DbBook = {
             title: book.volume.meta.title,
@@ -133,12 +133,12 @@ async function buildBookObject(
     bookId: string,
     volume: VolumeNode,
     imageResolver: (id: string) => Promise<Image | undefined>,
-): Promise<BookObject> {
-    const imageIds = collectImageIds(volume);
+): Promise<Book> {
+    const imageRefs = collectImageRefs(volume);
     const imagesDic: { [k: string]: string } = {};
-    for (const id of imageIds) {
+    for (const ref of imageRefs) {
         // TODO: report errors
-        const imageId = id.reference;
+        const imageId = ref.id;
         const image = await imageResolver(imageId);
         if (image) {
             const imageUrl = await assets.uploadBookImage(bookId, imageId, image.buffer);
