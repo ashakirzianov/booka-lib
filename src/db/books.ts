@@ -1,5 +1,5 @@
 import {
-    Book, VolumeNode, collectImageRefs,
+    Book, VolumeNode, collectImageRefs, BookInfo,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
@@ -8,7 +8,7 @@ import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
 import { config } from '../config';
-import { TypeFromSchema, model } from '../back-utils';
+import { TypeFromSchema, model, paginate } from '../back-utils';
 
 const assets = config().assets === 'mongo'
     ? mongoAssets
@@ -50,6 +50,7 @@ export const books = {
     all,
     count,
     removeAll,
+    infos,
 };
 
 async function byBookId(id: string) {
@@ -111,10 +112,12 @@ async function parseAndInsert(filePath: string) {
     throw new Error(`Couldn't insert book for id: '${bookId}'`);
 }
 
-async function all() {
-    const bookMetas = await docs
-        .find({}, ['title', 'author', 'bookId', 'cover'])
-        .exec();
+async function all(page: number): Promise<BookInfo[]> {
+    const bookMetas = await paginate(
+        docs
+            .find({}, ['title', 'author', 'bookId', 'cover']),
+        page,
+    ).exec();
     const allMetas = bookMetas.map(
         book => book.id
             ? {
@@ -122,11 +125,26 @@ async function all() {
                 title: book.title,
                 cover: book.cover,
                 id: book.bookId,
+                tags: [],
             }
             : undefined
     );
 
     return filterUndefined(allMetas);
+}
+
+async function infos(ids: string[]): Promise<BookInfo[]> {
+    const result = await docs
+        .find({ id: { $in: ids } })
+        .exec();
+
+    return result.map(r => ({
+        id: r.bookId,
+        tags: [],
+        author: r.author,
+        title: r.title,
+        cover: r.cover,
+    }));
 }
 
 async function buildBookObject(

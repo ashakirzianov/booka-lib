@@ -4,7 +4,7 @@ import { Middleware } from 'koa';
 import * as KoaRouter from 'koa-router';
 import {
     PathMethodContract, ApiContract, MethodNames,
-    AllowedPaths, Contract, Defined,
+    AllowedPaths, Contract, Defined, HasId,
 } from 'booka-common';
 
 export type ApiHandlerResult<T> = {
@@ -93,14 +93,20 @@ export type File = {
 
 // Mongoose:
 
-import { Schema, model as modelMongoose, Document, Model } from 'mongoose';
+import { Schema, model as modelMongoose, Document, Model, DocumentQuery } from 'mongoose';
+
+export function paginate<T, D extends Document>(query: DocumentQuery<T, D>, page: number, pageSize: number = 100) {
+    return query
+        .skip(page * pageSize)
+        .limit(pageSize);
+}
 
 export function model<S extends SchemaDefinition>(name: string, schema: S) {
     const schemaObject = new Schema(schema);
     return modelMongoose<DocumentType<S>>(name, schemaObject);
 }
 
-export function extractDataFields<T extends Document>(doc: T): Omit<T, keyof Document> & { _id: string } {
+export function extractDataFields<T extends Document>(doc: T): DataFromModel<Model<T>> & HasId {
     const result = doc.toObject();
     delete result['__v'];
     return result;
