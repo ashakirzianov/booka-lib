@@ -39,6 +39,7 @@ const schema = {
         type: String,
         required: true,
     },
+    license: String,
 } as const;
 
 export type DbBook = TypeFromSchema<typeof schema>;
