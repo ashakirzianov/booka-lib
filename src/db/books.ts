@@ -1,9 +1,9 @@
 import {
-    Book, VolumeNode, collectImageRefs, BookInfo,
+    Book, VolumeNode, BookInfo,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
-import { parseEpubAtPath, Image } from 'booka-parser';
+import { parseEpubAtPath, storeBuffers } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
@@ -22,7 +22,6 @@ const schema = {
     title: {
         type: String,
         index: true,
-        required: true,
     },
     cover: String,
     bookId: {
@@ -77,21 +76,21 @@ async function parseAndInsert(filePath: string) {
         throw new Error(`Couldn't parse book at path: '${filePath}'`);
     }
 
-    const volume = parsingResult.volume;
-    const duplicate = await checkForDuplicates(volume);
+    const book = parsingResult.book;
+    const duplicate = await checkForDuplicates(book);
     if (duplicate.exist) {
         return duplicate.document.bookId;
     }
 
-    const bookId = await generateBookId(volume.meta.title, volume.meta.author);
+    const bookId = await generateBookId(book.volume.meta.title, book.volume.meta.author);
 
-    const book = await buildBookObject(bookId, volume, parsingResult.resolveImage);
+    const resolvedBook = await resolveImages(bookId, book);
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
-        const coverImageId = book.volume.meta.coverImageId;
-        const coverUrl = coverImageId
-            ? book.idDictionary.image[coverImageId.id]
+        const coverImageNode = book.volume.meta.coverImageNode;
+        const coverUrl = coverImageNode && coverImageNode.node === 'image-url'
+            ? coverImageNode.url
             : undefined;
         const bookDocument: DbBook = {
             title: book.volume.meta.title,
@@ -123,7 +122,8 @@ async function all(page: number): Promise<BookInfo[]> {
         book => book.id
             ? {
                 author: book.author,
-                title: book.title,
+                // TODO: better solution for missing title
+                title: book.title || 'no-title',
                 cover: book.cover,
                 id: book.bookId,
                 tags: [],
@@ -143,39 +143,27 @@ async function infos(ids: string[]): Promise<BookInfo[]> {
         id: r.bookId,
         tags: [],
         author: r.author,
-        title: r.title,
+        // TODO: better solution for missing title
+        title: r.title || 'no-title',
         cover: r.cover,
     }));
 }
 
-async function buildBookObject(
+async function resolveImages(
     bookId: string,
-    volume: VolumeNode,
-    imageResolver: (id: string) => Promise<Image | undefined>,
+    book: Book,
 ): Promise<Book> {
-    const imageRefs = collectImageRefs(volume);
-    const imagesDic: { [k: string]: string } = {};
-    for (const ref of imageRefs) {
-        // TODO: report errors
-        const imageId = ref.id;
-        const image = await imageResolver(imageId);
-        if (image) {
-            const imageUrl = await assets.uploadBookImage(bookId, imageId, image.buffer);
-            if (imageUrl) {
-                imagesDic[imageId] = imageUrl;
-            }
-        }
-    }
-    return {
-        volume: volume,
-        idDictionary: {
-            image: imagesDic,
-        },
-    };
+    const resolved = await storeBuffers(book, async (buffer, imageId) => {
+        const imageBuffer = Buffer.from(buffer);
+        const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
+
+        return imageUrl;
+    });
+    return resolved;
 }
 
-async function checkForDuplicates(volume: VolumeNode) {
-    const hash = await buildHash(volume);
+async function checkForDuplicates(book: Book) {
+    const hash = await buildHash(book);
     const existing = await docs.findOne({ hash }).exec();
 
     if (existing) {
@@ -205,8 +193,9 @@ async function isBookExists(bookId: string): Promise<boolean> {
     return book !== null;
 }
 
-async function generateBookId(title: string, author?: string): Promise<string> {
-    for (const bookId of bookIdCandidate(title, author)) {
+async function generateBookId(title?: string, author?: string): Promise<string> {
+    // TODO: better solution for missing title
+    for (const bookId of bookIdCandidate(title || 'no-title', author)) {
         if (!await isBookExists(bookId)) {
             return bookId;
         }
