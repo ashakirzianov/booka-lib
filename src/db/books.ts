@@ -1,9 +1,7 @@
-import {
-    Book, VolumeNode, BookInfo,
-} from 'booka-common';
+import { Book, BookInfo } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
-import { parseEpubAtPath, storeBuffers } from 'booka-parser';
+import { storeBuffers, parseEpub } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { buildHash } from '../duplicates';
@@ -71,12 +69,12 @@ async function byBookId(id: string) {
 }
 
 async function parseAndInsert(filePath: string) {
-    const parsingResult = await parseEpubAtPath(filePath);
+    const parsingResult = await parseEpub({ filePath });
     if (!parsingResult.success) {
         throw new Error(`Couldn't parse book at path: '${filePath}'`);
     }
 
-    const book = parsingResult.book;
+    const book = parsingResult.value;
     const duplicate = await checkForDuplicates(book);
     if (duplicate.exist) {
         return duplicate.document.bookId;
@@ -89,8 +87,8 @@ async function parseAndInsert(filePath: string) {
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
         const coverImageNode = book.volume.meta.coverImageNode;
-        const coverUrl = coverImageNode && coverImageNode.node === 'image-url'
-            ? coverImageNode.url
+        const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
+            ? coverImageNode.imageRef
             : undefined;
         const bookDocument: DbBook = {
             title: book.volume.meta.title,
@@ -153,11 +151,13 @@ async function resolveImages(
     bookId: string,
     book: Book,
 ): Promise<Book> {
-    const resolved = await storeBuffers(book, async (buffer, imageId) => {
-        const imageBuffer = Buffer.from(buffer);
-        const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
+    const resolved = await storeBuffers(book, {
+        storeBuffer: async (buffer, imageId) => {
+            const imageBuffer = Buffer.from(buffer);
+            const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
 
-        return imageUrl;
+            return imageUrl;
+        },
     });
     return resolved;
 }
