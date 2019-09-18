@@ -4,7 +4,6 @@ import { logger } from '../log';
 import { storeBuffers, parseEpub } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
-import { buildHash } from '../duplicates';
 import { config } from '../config';
 import { TypeFromSchema, model, paginate } from '../back-utils';
 
@@ -69,13 +68,13 @@ async function byBookId(id: string) {
 }
 
 async function parseAndInsert(filePath: string) {
-    const parsingResult = await parseEpub({ filePath });
+    const parsingResult = await parseEpub({ filePath, buildHashes: true });
     if (!parsingResult.success) {
         throw new Error(`Couldn't parse book at path: '${filePath}'`);
     }
 
-    const book = parsingResult.value;
-    const duplicate = await checkForDuplicates(book);
+    const { book, fileHash, bookHash } = parsingResult.value;
+    const duplicate = await checkForDuplicates(book, fileHash, bookHash);
     if (duplicate.exist) {
         return duplicate.document.bookId;
     }
@@ -162,20 +161,19 @@ async function resolveImages(
     return resolved;
 }
 
-async function checkForDuplicates(book: Book) {
-    const hash = await buildHash(book);
-    const existing = await docs.findOne({ hash }).exec();
+async function checkForDuplicates(book: Book, fileHash: string, bookHash: string) {
+    const existing = await docs.findOne({ hash: bookHash }).exec();
 
     if (existing) {
         return {
             exist: true as const,
             document: existing,
-            hash,
+            hash: bookHash,
         };
     } else {
         return {
             exist: false as const,
-            hash,
+            hash: bookHash,
         };
     }
 }
