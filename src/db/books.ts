@@ -78,7 +78,7 @@ async function parseAndInsert(filePath: string) {
         return existingFile.bookId;
     }
 
-    const parsingResult = await parseEpub({ filePath, buildHashes: true });
+    const parsingResult = await parseEpub({ filePath });
     if (!parsingResult.success) {
         throw new Error(`Couldn't parse book at path: '${filePath}'`);
     }
