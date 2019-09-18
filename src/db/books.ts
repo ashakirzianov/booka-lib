@@ -1,4 +1,4 @@
-import { Book, BookInfo } from 'booka-common';
+import { Book, BookInfo, buildFileHash, buildBookHash } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
 import { storeBuffers, parseEpub } from 'booka-parser';
@@ -72,15 +72,22 @@ async function byBookId(id: string) {
 }
 
 async function parseAndInsert(filePath: string) {
+    const fileHash = await buildFileHash(filePath);
+    const existingFile = await checkForFileDuplicates(fileHash);
+    if (existingFile) {
+        return existingFile.bookId;
+    }
+
     const parsingResult = await parseEpub({ filePath, buildHashes: true });
     if (!parsingResult.success) {
         throw new Error(`Couldn't parse book at path: '${filePath}'`);
     }
 
-    const { book, fileHash, bookHash } = parsingResult.value;
-    const duplicate = await checkForDuplicates(fileHash, bookHash);
-    if (duplicate.match === 'bookHash' || duplicate.match === 'fileHash') {
-        return duplicate.document.bookId;
+    const { book } = parsingResult.value;
+    const bookHash = buildBookHash(book);
+    const existingBook = await checkForBookDuplicates(bookHash);
+    if (existingBook) {
+        return existingBook.bookId;
     }
 
     const bookId = await generateBookId(book.volume.meta.title, book.volume.meta.author);
@@ -166,26 +173,18 @@ async function resolveImages(
     return resolved;
 }
 
-async function checkForDuplicates(fileHash: string, bookHash: string) {
+async function checkForFileDuplicates(fileHash: string) {
     const matchFileHash = await docs.findOne({ fileHash }).exec();
-    if (matchFileHash) {
-        return {
-            match: 'fileHash' as const,
-            document: matchFileHash,
-        };
-    }
+    return matchFileHash
+        ? matchFileHash
+        : undefined;
+}
 
-    const matchTextHash = await docs.findOne({ bookHash }).exec();
-    if (matchTextHash) {
-        return {
-            match: 'bookHash' as const,
-            document: matchTextHash,
-        };
-    }
-
-    return {
-        match: 'none' as const,
-    };
+async function checkForBookDuplicates(bookHash: string) {
+    const matchBookHash = await docs.findOne({ bookHash }).exec();
+    return matchBookHash
+        ? matchBookHash
+        : undefined;
 }
 
 async function count() {
