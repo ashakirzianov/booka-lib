@@ -31,7 +31,11 @@ const schema = {
         required: true,
     },
     originalAssetId: String,
-    hash: {
+    fileHash: {
+        type: String,
+        required: true,
+    },
+    bookHash: {
         type: String,
         required: true,
     },
@@ -74,8 +78,8 @@ async function parseAndInsert(filePath: string) {
     }
 
     const { book, fileHash, bookHash } = parsingResult.value;
-    const duplicate = await checkForDuplicates(book, fileHash, bookHash);
-    if (duplicate.exist) {
+    const duplicate = await checkForDuplicates(fileHash, bookHash);
+    if (duplicate.match === 'bookHash' || duplicate.match === 'fileHash') {
         return duplicate.document.bookId;
     }
 
@@ -96,7 +100,8 @@ async function parseAndInsert(filePath: string) {
             jsonAssetId: jsonAssetId,
             originalAssetId: originalAssetId,
             bookId: bookId,
-            hash: duplicate.hash,
+            bookHash,
+            fileHash,
         };
 
         const inserted = await docs.insertMany(bookDocument);
@@ -161,21 +166,26 @@ async function resolveImages(
     return resolved;
 }
 
-async function checkForDuplicates(book: Book, fileHash: string, bookHash: string) {
-    const existing = await docs.findOne({ hash: bookHash }).exec();
-
-    if (existing) {
+async function checkForDuplicates(fileHash: string, bookHash: string) {
+    const matchFileHash = await docs.findOne({ fileHash }).exec();
+    if (matchFileHash) {
         return {
-            exist: true as const,
-            document: existing,
-            hash: bookHash,
-        };
-    } else {
-        return {
-            exist: false as const,
-            hash: bookHash,
+            match: 'fileHash' as const,
+            document: matchFileHash,
         };
     }
+
+    const matchTextHash = await docs.findOne({ bookHash }).exec();
+    if (matchTextHash) {
+        return {
+            match: 'bookHash' as const,
+            document: matchTextHash,
+        };
+    }
+
+    return {
+        match: 'none' as const,
+    };
 }
 
 async function count() {
