@@ -7,6 +7,7 @@ import { assets as mongoAssets } from '../assets.mongo';
 import { config } from '../config';
 import { TypeFromSchema, model, paginate } from '../back-utils';
 
+// TODO: remove mongo assets support
 const assets = config().assets === 'mongo'
     ? mongoAssets
     : s3assets;
@@ -72,30 +73,16 @@ async function byBookId(id: string) {
 }
 
 async function parseAndInsert(filePath: string) {
-    const fileHash = await buildFileHash(filePath);
-    const existingFile = await checkForFileDuplicates(fileHash);
-    if (existingFile) {
-        return existingFile.bookId;
+    const processResult = await processFile(filePath);
+    if (processResult.alreadyExist) {
+        return processResult.bookId;
     }
-
-    const parsingResult = await parseEpub({ filePath });
-    if (!parsingResult.success) {
-        throw new Error(`Couldn't parse book at path: '${filePath}'`);
-    }
-
-    const { book } = parsingResult.value;
-    const bookHash = buildBookHash(book);
-    const existingBook = await checkForBookDuplicates(bookHash);
-    if (existingBook) {
-        return existingBook.bookId;
-    }
+    const { book, bookHash, fileHash } = processResult;
 
     const bookId = await generateBookId(book.volume.meta.title, book.volume.meta.author);
 
-    const resolvedBook = await resolveImages(bookId, book);
-    const jsonAssetId = await assets.uploadBookObject(bookId, book);
-    if (jsonAssetId) {
-        const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
+    const uploadResult = await uploadBookAsset(bookId, filePath, book);
+    if (uploadResult) {
         const coverImageNode = book.volume.meta.coverImageNode;
         const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
             ? coverImageNode.imageRef
@@ -104,8 +91,8 @@ async function parseAndInsert(filePath: string) {
             title: book.volume.meta.title,
             author: book.volume.meta.author,
             cover: coverUrl,
-            jsonAssetId: jsonAssetId,
-            originalAssetId: originalAssetId,
+            jsonAssetId: uploadResult.jsonAssetId,
+            originalAssetId: uploadResult.originalAssetId,
             bookId: bookId,
             bookHash,
             fileHash,
@@ -119,6 +106,70 @@ async function parseAndInsert(filePath: string) {
     }
 
     throw new Error(`Couldn't insert book for id: '${bookId}'`);
+}
+
+async function processFile(filePath: string) {
+    const fileHash = await buildFileHash(filePath);
+    const existingFile = await checkForFileDuplicates(fileHash);
+    if (existingFile) {
+        return {
+            alreadyExist: true as const,
+            bookId: existingFile.bookId,
+        };
+    }
+
+    const parsingResult = await parseEpub({ filePath });
+    if (!parsingResult.success) {
+        throw new Error(`Couldn't parse book at path: '${filePath}'`);
+    }
+
+    const { book } = parsingResult.value;
+    const bookHash = buildBookHash(book);
+    const existingBook = await checkForBookDuplicates(bookHash);
+    if (existingBook) {
+        return {
+            alreadyExist: true as const,
+            bookId: existingBook.bookId,
+        };
+    }
+
+    return {
+        alreadyExist: false as const,
+        book, bookHash, fileHash,
+    };
+}
+
+async function uploadBookAsset(bookId: string, filePath: string, book: Book) {
+    const resolvedBook = await uploadAndResolveBookImages(bookId, book);
+    const jsonAssetId = await assets.uploadBookObject(bookId, book);
+    if (jsonAssetId) {
+        const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
+        const coverImageNode = book.volume.meta.coverImageNode;
+        const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
+            ? coverImageNode.imageRef
+            : undefined;
+
+        return {
+            jsonAssetId, originalAssetId,
+        };
+    }
+
+    return undefined;
+}
+
+async function uploadAndResolveBookImages(
+    bookId: string,
+    book: Book,
+): Promise<Book> {
+    const resolved = await storeBuffers(book, {
+        storeBuffer: async (buffer, imageId) => {
+            const imageBuffer = Buffer.from(buffer);
+            const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
+
+            return imageUrl;
+        },
+    });
+    return resolved;
 }
 
 async function all(page: number): Promise<BookInfo[]> {
@@ -156,21 +207,6 @@ async function infos(ids: string[]): Promise<BookInfo[]> {
         title: r.title || 'no-title',
         cover: r.cover,
     }));
-}
-
-async function resolveImages(
-    bookId: string,
-    book: Book,
-): Promise<Book> {
-    const resolved = await storeBuffers(book, {
-        storeBuffer: async (buffer, imageId) => {
-            const imageBuffer = Buffer.from(buffer);
-            const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
-
-            return imageUrl;
-        },
-    });
-    return resolved;
 }
 
 async function checkForFileDuplicates(fileHash: string) {
