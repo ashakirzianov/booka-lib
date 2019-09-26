@@ -46,8 +46,8 @@
   },
   "dependencies": {
     "aws-sdk": "^2.508.0",
-    "booka-common": "^0.8.0",
-    "booka-parser": "^0.5.0",
+    "booka-common": "^0.8.1",
+    "booka-parser": "^0.5.2",
     "dotenv": "^8.0.0",
     "koa": "^2.7.0",
     "koa-body": "^4.1.0",
