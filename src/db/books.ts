@@ -1,7 +1,9 @@
-import { Book, BookInfo, buildFileHash, buildBookHash } from 'booka-common';
+import {
+    Book, BookInfo, buildFileHash, buildBookHash, storeImages,
+} from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
-import { storeBuffers, parseEpub } from 'booka-parser';
+import { parseEpub } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { config } from '../config';
@@ -79,17 +81,17 @@ async function parseAndInsert(filePath: string) {
     }
     const { book, bookHash, fileHash } = processResult;
 
-    const bookId = await generateBookId(book.volume.meta.title, book.volume.meta.author);
+    const bookId = await generateBookId(book.meta.title, book.meta.author);
 
     const uploadResult = await uploadBookAsset(bookId, filePath, book);
     if (uploadResult) {
-        const coverImageNode = book.volume.meta.coverImageNode;
-        const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
-            ? coverImageNode.imageRef
+        const coverImage = book.meta.coverImage;
+        const coverUrl = coverImage && coverImage.kind === 'ref'
+            ? coverImage.ref
             : undefined;
         const bookDocument: DbBook = {
-            title: book.volume.meta.title,
-            author: book.volume.meta.author,
+            title: book.meta.title,
+            author: book.meta.author,
             cover: coverUrl,
             jsonAssetId: uploadResult.jsonAssetId,
             originalAssetId: uploadResult.originalAssetId,
@@ -144,10 +146,6 @@ async function uploadBookAsset(bookId: string, filePath: string, book: Book) {
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
-        const coverImageNode = book.volume.meta.coverImageNode;
-        const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
-            ? coverImageNode.imageRef
-            : undefined;
 
         return {
             jsonAssetId, originalAssetId,
@@ -161,13 +159,11 @@ async function uploadAndResolveBookImages(
     bookId: string,
     book: Book,
 ): Promise<Book> {
-    const resolved = await storeBuffers(book, {
-        storeBuffer: async (buffer, imageId) => {
-            const imageBuffer = Buffer.from(buffer);
-            const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
+    const resolved = await storeImages(book, async (buffer, imageId) => {
+        const imageBuffer = Buffer.from(buffer);
+        const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
 
-            return imageUrl;
-        },
+        return imageUrl;
     });
     return resolved;
 }
