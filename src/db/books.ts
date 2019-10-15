@@ -86,8 +86,8 @@ async function parseAndInsert(filePath: string) {
     const uploadResult = await uploadBookAsset(bookId, filePath, book);
     if (uploadResult) {
         const coverImage = book.meta.coverImage;
-        const coverUrl = coverImage && coverImage.kind === 'ref'
-            ? coverImage.ref
+        const coverUrl = coverImage && coverImage.image === 'external'
+            ? coverImage.url
             : undefined;
         const bookDocument: DbBook = {
             title: book.meta.title,
