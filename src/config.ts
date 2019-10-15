@@ -9,7 +9,7 @@ const commonConfig: Config = {
     defaultPort: 3141,
     bucket: {
         json: 'booka-lib-json',
-        original: 'booka-lib-original',
+        original: 'booka-lib-originals',
         images: 'booka-lib-images',
     },
 };
