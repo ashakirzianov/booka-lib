@@ -1,5 +1,5 @@
 import {
-    Book, BookInfo, buildFileHash, buildBookHash, storeImages,
+    Book, BookDesc, buildFileHash, buildBookHash, storeImages,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
@@ -168,7 +168,7 @@ async function uploadAndResolveBookImages(
     return resolved;
 }
 
-async function all(page: number): Promise<BookInfo[]> {
+async function all(page: number): Promise<BookDesc[]> {
     const bookMetas = await paginate(
         docs
             .find({}, ['title', 'author', 'bookId', 'cover']),
@@ -190,7 +190,7 @@ async function all(page: number): Promise<BookInfo[]> {
     return filterUndefined(allMetas);
 }
 
-async function infos(ids: string[]): Promise<BookInfo[]> {
+async function infos(ids: string[]): Promise<BookDesc[]> {
     const result = await docs
         .find({ id: { $in: ids } })
         .exec();
