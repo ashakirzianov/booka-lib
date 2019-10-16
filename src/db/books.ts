@@ -1,5 +1,5 @@
 import {
-    Book, BookDesc, buildFileHash, buildBookHash, storeImages,
+    Book, BookDesc, buildFileHash, buildBookHash, storeImages, extractBookText,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
@@ -24,6 +24,7 @@ const schema = {
         index: true,
     },
     cover: String,
+    coverSmall: String,
     bookId: {
         type: String,
         index: true,
@@ -42,7 +43,18 @@ const schema = {
         type: String,
         required: true,
     },
-    license: String,
+    license: {
+        type: String,
+        required: true,
+    },
+    tags: {
+        type: [Object],
+        required: true,
+    },
+    textLength: {
+        type: Number,
+        required: true,
+    },
 } as const;
 
 export type DbBook = TypeFromSchema<typeof schema>;
@@ -89,15 +101,19 @@ async function parseAndInsert(filePath: string) {
         const coverUrl = coverImage && coverImage.image === 'external'
             ? coverImage.url
             : undefined;
+        const textLength = extractBookText(book).length;
         const bookDocument: DbBook = {
             title: book.meta.title,
             author: book.meta.author,
+            license: book.meta.license,
             cover: coverUrl,
             jsonAssetId: uploadResult.jsonAssetId,
             originalAssetId: uploadResult.originalAssetId,
             bookId: bookId,
             bookHash,
             fileHash,
+            tags: book.tags,
+            textLength,
         };
 
         const inserted = await docs.insertMany(bookDocument);
