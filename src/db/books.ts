@@ -1,7 +1,9 @@
-import { Book, BookInfo, buildFileHash, buildBookHash } from 'booka-common';
+import {
+    Book, BookDesc, buildFileHash, buildBookHash, storeImages, extractBookText,
+} from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
-import { storeBuffers, parseEpub } from 'booka-parser';
+import { parseEpub } from 'booka-parser';
 import { assets as s3assets } from '../assets';
 import { assets as mongoAssets } from '../assets.mongo';
 import { config } from '../config';
@@ -22,6 +24,7 @@ const schema = {
         index: true,
     },
     cover: String,
+    coverSmall: String,
     bookId: {
         type: String,
         index: true,
@@ -40,7 +43,18 @@ const schema = {
         type: String,
         required: true,
     },
-    license: String,
+    license: {
+        type: String,
+        required: true,
+    },
+    tags: {
+        type: [Object],
+        required: true,
+    },
+    textLength: {
+        type: Number,
+        required: true,
+    },
 } as const;
 
 export type DbBook = TypeFromSchema<typeof schema>;
@@ -79,23 +93,27 @@ async function parseAndInsert(filePath: string) {
     }
     const { book, bookHash, fileHash } = processResult;
 
-    const bookId = await generateBookId(book.volume.meta.title, book.volume.meta.author);
+    const bookId = await generateBookId(book.meta.title, book.meta.author);
 
     const uploadResult = await uploadBookAsset(bookId, filePath, book);
     if (uploadResult) {
-        const coverImageNode = book.volume.meta.coverImageNode;
-        const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
-            ? coverImageNode.imageRef
+        const coverImage = book.meta.coverImage;
+        const coverUrl = coverImage && coverImage.image === 'external'
+            ? coverImage.url
             : undefined;
+        const textLength = extractBookText(book).length;
         const bookDocument: DbBook = {
-            title: book.volume.meta.title,
-            author: book.volume.meta.author,
+            title: book.meta.title,
+            author: book.meta.author,
+            license: book.meta.license,
             cover: coverUrl,
             jsonAssetId: uploadResult.jsonAssetId,
             originalAssetId: uploadResult.originalAssetId,
             bookId: bookId,
             bookHash,
             fileHash,
+            tags: book.tags,
+            textLength,
         };
 
         const inserted = await docs.insertMany(bookDocument);
@@ -144,10 +162,6 @@ async function uploadBookAsset(bookId: string, filePath: string, book: Book) {
     const jsonAssetId = await assets.uploadBookObject(bookId, book);
     if (jsonAssetId) {
         const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
-        const coverImageNode = book.volume.meta.coverImageNode;
-        const coverUrl = coverImageNode && coverImageNode.node === 'image-ref'
-            ? coverImageNode.imageRef
-            : undefined;
 
         return {
             jsonAssetId, originalAssetId,
@@ -161,32 +175,32 @@ async function uploadAndResolveBookImages(
     bookId: string,
     book: Book,
 ): Promise<Book> {
-    const resolved = await storeBuffers(book, {
-        storeBuffer: async (buffer, imageId) => {
-            const imageBuffer = Buffer.from(buffer);
-            const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
+    const resolved = await storeImages(book, async (buffer, imageId) => {
+        const imageBuffer = Buffer.from(buffer);
+        const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
 
-            return imageUrl;
-        },
+        return imageUrl;
     });
     return resolved;
 }
 
-async function all(page: number): Promise<BookInfo[]> {
+async function all(page: number): Promise<BookDesc[]> {
     const bookMetas = await paginate(
         docs
-            .find({}, ['title', 'author', 'bookId', 'cover']),
+            .find({}, ['title', 'author', 'bookId', 'cover', 'coverSmall', 'license', 'tags']),
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        book => book.id
+        bookDb => bookDb.id
             ? {
-                author: book.author,
+                author: bookDb.author,
                 // TODO: better solution for missing title
-                title: book.title || 'no-title',
-                cover: book.cover,
-                id: book.bookId,
-                tags: [],
+                title: bookDb.title || 'no-title',
+                license: bookDb.license,
+                cover: bookDb.cover,
+                coverSmall: bookDb.coverSmall,
+                id: bookDb.bookId,
+                tags: bookDb.tags as any[],
             }
             : undefined
     );
@@ -194,7 +208,7 @@ async function all(page: number): Promise<BookInfo[]> {
     return filterUndefined(allMetas);
 }
 
-async function infos(ids: string[]): Promise<BookInfo[]> {
+async function infos(ids: string[]): Promise<BookDesc[]> {
     const result = await docs
         .find({ id: { $in: ids } })
         .exec();
