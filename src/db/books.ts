@@ -187,18 +187,20 @@ async function uploadAndResolveBookImages(
 async function all(page: number): Promise<BookDesc[]> {
     const bookMetas = await paginate(
         docs
-            .find({}, ['title', 'author', 'bookId', 'cover']),
+            .find({}, ['title', 'author', 'bookId', 'cover', 'coverSmall', 'license', 'tags']),
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        book => book.id
+        bookDb => bookDb.id
             ? {
-                author: book.author,
+                author: bookDb.author,
                 // TODO: better solution for missing title
-                title: book.title || 'no-title',
-                cover: book.cover,
-                id: book.bookId,
-                tags: [],
+                title: bookDb.title || 'no-title',
+                license: bookDb.license,
+                cover: bookDb.cover,
+                coverSmall: bookDb.coverSmall,
+                id: bookDb.bookId,
+                tags: bookDb.tags as any[],
             }
             : undefined
     );
