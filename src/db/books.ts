@@ -1,5 +1,5 @@
 import {
-    Book, BookDesc, buildFileHash, buildBookHash, storeImages, extractBookText,
+    Book, BookDesc, buildFileHash, buildBookHash, storeImages, extractBookText, BookLicense,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
 import { logger } from '../log';
@@ -191,14 +191,13 @@ async function all(page: number): Promise<BookDesc[]> {
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        bookDb => bookDb.id
+        (bookDb): BookDesc | undefined => bookDb.id
             ? {
                 author: bookDb.author,
                 // TODO: better solution for missing title
                 title: bookDb.title || 'no-title',
-                license: bookDb.license,
-                cover: bookDb.cover,
-                coverSmall: bookDb.coverSmall,
+                coverUrl: bookDb.cover,
+                smallCoverUrl: bookDb.coverSmall,
                 id: bookDb.bookId,
                 tags: bookDb.tags as any[],
             }
