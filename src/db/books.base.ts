@@ -1,9 +1,9 @@
 import {
-    Book, BookDesc,
+    Book, BookDesc, filterUndefined,
 } from 'booka-common';
-import { transliterate, filterUndefined } from '../utils';
 import { downloadStringAsset } from '../assets';
 import { TypeFromSchema, model, paginate } from '../back-utils';
+import { slugify } from 'transliteration';
 
 const schema = {
     author: {
@@ -138,4 +138,9 @@ function* bookIdCandidate(title: string, author?: string) {
     for (let i = 0; true; i++) {
         yield candidate + '-' + i.toString();
     }
+}
+
+function transliterate(str: string) {
+    const result = slugify(str, { allowedChars: 'a-zA-Z0-9-_' });
+    return result;
 }
