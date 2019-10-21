@@ -1,5 +1,17 @@
 import { HasId } from 'booka-common';
-import { Schema, model as modelMongoose, Document, Model, DocumentQuery } from 'mongoose';
+import {
+    Schema, model as modelMongoose,
+    Document, Model, DocumentQuery,
+    set, connect,
+} from 'mongoose';
+
+export async function connectDb(uri: string) {
+    set('useNewUrlParser', true);
+    set('useFindAndModify', false);
+    set('useCreateIndex', true);
+
+    return connect(uri);
+}
 
 export function paginate<T, D extends Document>(query: DocumentQuery<T, D>, page: number, pageSize: number = 100) {
     return query

@@ -1,20 +1,20 @@
 import * as Koa from 'koa';
-import * as https from 'https';
-import * as http from 'http';
-import * as fs from 'fs';
 import * as koaBody from 'koa-body';
 import * as logger from 'koa-logger';
 import { config as configEnv } from 'dotenv';
+import * as https from 'https';
+import * as http from 'http';
+import { existsSync, readFileSync } from 'fs';
 import { router } from './routes';
-import { connectDb } from './db';
 import { config, SslConfig } from './config';
 import { logDebug } from './log';
+import { connectDb } from './back-utils';
 
 configEnv();
 startup(new Koa());
 
 async function startup(app: Koa) {
-    await connectDb();
+    await connectDb(process.env.LIB_MONGODB_URI || 'mongodb://localhost:27017/booka-lib');
 
     app.use(logger());
     app.use(koaBody({
@@ -47,10 +47,10 @@ function createServer(requestListener: http.RequestListener) {
 }
 
 function serverOptions(sslConfig: SslConfig): https.ServerOptions {
-    if (fs.existsSync(sslConfig.keyPath) && fs.existsSync(sslConfig.certPath)) {
+    if (existsSync(sslConfig.keyPath) && existsSync(sslConfig.certPath)) {
         return {
-            key: fs.readFileSync(sslConfig.keyPath),
-            cert: fs.readFileSync(sslConfig.certPath),
+            key: readFileSync(sslConfig.keyPath),
+            cert: readFileSync(sslConfig.certPath),
         };
     } else {
         logDebug(`You should add '${sslConfig.keyPath}' and '${sslConfig.certPath}' for server to work properly on localhost`);
