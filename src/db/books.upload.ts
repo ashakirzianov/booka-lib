@@ -1,8 +1,16 @@
-import { generateBookId, DbBook, docs } from './books.base';
-import { extractBookText, buildFileHash, buildBookHash, Book, storeImages } from 'booka-common';
-import { logger } from '../log';
+import * as sharp from 'sharp';
+import { promisify } from 'util';
+import { readFile } from 'fs';
 import { parseEpub } from 'booka-parser';
-import { assets } from '../assets';
+import {
+    extractBookText, buildFileHash, buildBookHash, Book, getCoverBase64,
+    compoundDiagnostic, Diagnostic, success, failure, Result,
+} from 'booka-common';
+import { logger } from '../log';
+import { uploadBody } from '../assets';
+import { generateBookId, DbBook, docs } from './books.base';
+
+const bookaExt = '.booka';
 
 export async function parseAndInsert(filePath: string) {
     const processResult = await processFile(filePath);
@@ -13,8 +21,11 @@ export async function parseAndInsert(filePath: string) {
 
     const bookId = await generateBookId(book.meta.title, book.meta.author);
 
-    const uploadResult = await uploadBookAsset(bookId, filePath, book);
-    if (uploadResult) {
+    const uploadResult = await uploadBookAsset({
+        bookId, book,
+        originalFilePath: filePath,
+    });
+    if (uploadResult.success) {
         const coverImage = book.meta.coverImage;
         const coverUrl = coverImage && coverImage.image === 'external'
             ? coverImage.url
@@ -25,8 +36,8 @@ export async function parseAndInsert(filePath: string) {
             author: book.meta.author,
             license: book.meta.license,
             cover: coverUrl,
-            jsonAssetId: uploadResult.jsonAssetId,
-            originalAssetId: uploadResult.originalAssetId,
+            jsonAssetId: uploadResult.value.json,
+            originalAssetId: uploadResult.value.original,
             bookId: bookId,
             bookHash,
             fileHash,
@@ -75,31 +86,40 @@ async function processFile(filePath: string) {
     };
 }
 
-async function uploadBookAsset(bookId: string, filePath: string, book: Book) {
-    const resolvedBook = await uploadAndResolveBookImages(bookId, book);
-    const jsonAssetId = await assets.uploadBookObject(bookId, book);
-    if (jsonAssetId) {
-        const originalAssetId = await assets.uploadOriginalFile(bookId, filePath);
-
-        return {
-            jsonAssetId, originalAssetId,
-        };
-    }
-
-    return undefined;
-}
-
-async function uploadAndResolveBookImages(
-    bookId: string,
+type UploadBookInput = {
     book: Book,
-): Promise<Book> {
-    const resolved = await storeImages(book, async (buffer, imageId) => {
-        const imageBuffer = Buffer.from(buffer);
-        const imageUrl = await assets.uploadBookImage(bookId, imageId, imageBuffer);
-
-        return imageUrl;
-    });
-    return resolved;
+    bookId: string,
+    originalFilePath: string,
+};
+type UploadBookOutput = {
+    json: string,
+    original?: string,
+};
+async function uploadBookAsset({ book, bookId, originalFilePath }: UploadBookInput): Promise<Result<UploadBookOutput>> {
+    const diags: Diagnostic[] = [];
+    const key = `${bookId}${bookaExt}`;
+    const coverResult = await uploadCover(bookId, book);
+    diags.push(coverResult.diagnostic);
+    const json = JSON.stringify(book);
+    const jsonResult = await uploadBody('booka-lib-json', key, json);
+    diags.push(jsonResult.diagnostic);
+    if (jsonResult.success) {
+        const originalResult = await uploadOriginalFile(bookId, originalFilePath);
+        diags.push(originalResult.diagnostic);
+        if (originalResult.success) {
+            return success(
+                { json: jsonResult.value.key, original: jsonResult.value.key },
+                compoundDiagnostic(diags),
+            );
+        } else {
+            return success(
+                { json: jsonResult.value.key },
+                compoundDiagnostic(diags),
+            );
+        }
+    } else {
+        return failure(compoundDiagnostic(diags));
+    }
 }
 
 async function checkForFileDuplicates(fileHash: string) {
@@ -114,4 +134,56 @@ async function checkForBookDuplicates(bookHash: string) {
     return matchBookHash
         ? matchBookHash
         : undefined;
+}
+
+async function uploadCover(bookId: string, book: Book) {
+    const base64 = getCoverBase64(book);
+    if (base64 === undefined) {
+        return {};
+    }
+    const cover = Buffer.from(base64, 'base64');
+    const diags: Diagnostic[] = [];
+    const largeCoverKey = `@cover@large@${bookId}`;
+    const largeResult = await uploadBody('booka-lib-images', largeCoverKey, cover);
+    if (!largeResult.success) {
+        diags.push({
+            diag: 'failed to upload large cover',
+            bookId,
+            diagnostic: largeResult.diagnostic,
+        });
+    }
+    const smallCoverKey = `@cover@small@${bookId}`;
+    const smallCover = await resizeBookCover(cover);
+    const smallResult = await uploadBody('booka-lib-images', smallCoverKey, smallCover);
+    if (!smallResult.success) {
+        diags.push({
+            diag: 'failed to upload small cover',
+            bookId,
+            diagnostic: largeResult.diagnostic,
+        });
+    }
+
+    return {
+        smallCoverUrl: smallResult.success
+            ? smallResult.value.url
+            : undefined,
+        largeCoverUrl: largeResult.success
+            ? largeResult.value.url
+            : undefined,
+        diagnostic: compoundDiagnostic(diags),
+    };
+}
+
+async function resizeBookCover(buffer: Buffer): Promise<Buffer> {
+    return sharp(buffer)
+        .resize(null, 180)
+        .toBuffer();
+}
+
+async function uploadOriginalFile(bookId: string, filePath: string) {
+    const fileBody = await promisify(readFile)(filePath);
+    const key = `${bookId}`;
+    const result = await uploadBody('booka-lib-originals', key, fileBody);
+
+    return result;
 }

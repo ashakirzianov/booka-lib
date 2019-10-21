@@ -2,15 +2,8 @@ import {
     Book, BookDesc,
 } from 'booka-common';
 import { transliterate, filterUndefined } from '../utils';
-import { assets as s3assets } from '../assets';
-import { assets as mongoAssets } from '../assets.mongo';
-import { config } from '../config';
+import { downloadStringAsset } from '../assets';
 import { TypeFromSchema, model, paginate } from '../back-utils';
-
-// TODO: remove mongo assets support
-const assets = config().assets === 'mongo'
-    ? mongoAssets
-    : s3assets;
 
 const schema = {
     author: {
@@ -65,7 +58,7 @@ export async function byBookId(id: string) {
         return undefined;
     }
 
-    const json = await assets.downloadJson(book.jsonAssetId);
+    const json = await downloadStringAsset('booka-lib-json', book.jsonAssetId);
     if (json) {
         const parsed = JSON.parse(json);
         const contract = parsed as Book;

@@ -1,73 +1,102 @@
-import { readFile } from 'fs';
+// tslint:disable: no-submodule-imports
 import { S3 } from 'aws-sdk';
-import { Book } from 'booka-common';
-import { config } from './config';
-import { promisify } from 'util';
-
-export const assets = {
-    uploadBookObject,
-    uploadOriginalFile,
-    uploadBookImage,
-    downloadJson,
-};
-export type AssetsManager = typeof assets;
+import { ListObjectsV2Output } from 'aws-sdk/clients/s3';
+import { ContinuationToken } from 'aws-sdk/clients/kinesisvideomedia';
+import { filterUndefined, Result, success, failure } from 'booka-common';
 
 const service = new S3();
 
-async function uploadBookObject(bookId: string, book: Book) {
-    try {
-        const bookBody = JSON.stringify(book);
-        const key = `${bookId}.json`;
-        const result = await service.putObject({
-            Bucket: config().bucket.json,
-            Key: key,
-            Body: bookBody,
-        }).promise();
+export const buckets = [
+    'booka-lib-json',
+    'booka-lib-images',
+    'booka-lib-originals',
+] as const;
+export type Bucket = typeof buckets[number];
 
-        return key;
-    } catch (e) {
-        return undefined;
+export async function* listObjects(bucket: Bucket) {
+    for await (const batch of listObjectBatches(bucket)) {
+        yield* batch;
     }
 }
 
-async function uploadOriginalFile(bookId: string, filePath: string) {
-    try {
-        const fileBody = await promisify(readFile)(filePath);
-        const key = `${bookId}`;
-        const result = await service.putObject({
-            Bucket: config().bucket.original,
-            Key: key,
-            Body: fileBody,
+async function* listObjectBatches(bucket: Bucket) {
+    let objects: ListObjectsV2Output;
+    let token: ContinuationToken | undefined = undefined;
+    do {
+        objects = await service.listObjectsV2({
+            Bucket: bucket,
+            ContinuationToken: token,
         }).promise();
+        token = objects.NextContinuationToken;
+        yield objects.Contents
+            ? objects.Contents
+            : [];
+    } while (objects.IsTruncated);
+}
 
-        return key;
-    } catch (e) {
-        return undefined;
+export async function deleteObject(bucket: Bucket, object: S3.Object) {
+    if (object.Key) {
+        const result = await service.deleteObject({
+            Bucket: bucket,
+            Key: object.Key,
+        }).promise();
     }
 }
 
-async function uploadBookImage(bookId: string, imageId: string, image: Buffer) {
+export async function deleteObjects(bucket: Bucket, objects: S3.Object[]) {
+    if (objects.length === 0) {
+        return;
+    }
+
+    const keys = filterUndefined(objects.map(o => o.Key));
+    const result = await service.deleteObjects({
+        Bucket: bucket,
+        Delete: {
+            Objects: keys.map(k => ({
+                Key: k,
+            })),
+        },
+    }).promise();
+
+    return keys;
+}
+
+export type UploadResult = {
+    url: string,
+    key: string,
+};
+export async function uploadBody(bucket: Bucket, key: string, body: S3.Body, metadata?: S3.Metadata): Promise<Result<UploadResult>> {
     try {
-        const fileBody = image;
-        const key = `img-${bookId}-${imageId}`;
         const result = await service.putObject({
-            Bucket: config().bucket.images,
+            Bucket: bucket,
             Key: key,
-            Body: fileBody,
+            Body: body,
+            Metadata: metadata,
         }).promise();
 
-        const url = buildUrl(config().bucket.images, key);
-
-        return url;
+        if (result.$response.data) {
+            return success({
+                url: buildUrl(bucket, key),
+                key: key,
+            });
+        } else {
+            return failure({
+                diag: 'failed to upload',
+                err: result.$response.error,
+            });
+        }
     } catch (e) {
-        return undefined;
+        return failure({
+            diag: 'exception on upload',
+            err: e,
+        });
     }
 }
 
-async function downloadJson(assetId: string): Promise<string | undefined> {
+export async function downloadStringAsset(bucket: Bucket, assetId: string): Promise<string | undefined> {
     try {
         const result = await service.getObject({
-            Bucket: config().bucket.json,
+            Bucket: bucket,
             Key: assetId,
         }).promise();
         return result.Body as string;
