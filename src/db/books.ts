@@ -55,6 +55,7 @@ const schema = {
         type: Number,
         required: true,
     },
+    private: Boolean,
 } as const;
 
 export type DbBook = TypeFromSchema<typeof schema>;
