@@ -2,7 +2,7 @@ import {
     Book, BookDesc, filterUndefined,
 } from 'booka-common';
 import { downloadStringAsset } from '../assets';
-import { TypeFromSchema, model, paginate } from '../back-utils';
+import { TypeFromSchema, model, paginate } from 'booka-utils';
 import { slugify } from 'transliteration';
 
 const schema = {

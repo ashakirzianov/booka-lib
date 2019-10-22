@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'fs';
 import { router } from './routes';
 import { config, SslConfig } from './config';
 import { logDebug } from './log';
-import { connectDb } from './back-utils';
+import { connectDb } from 'booka-utils';
 
 configEnv();
 startup(new Koa());
