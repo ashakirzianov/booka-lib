@@ -47,6 +47,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.508.0",
+    "axios": "^0.19.0",
     "booka-common": "^0.10.0",
     "booka-parser": "^0.7.1",
     "booka-utils": "^0.1.2",
