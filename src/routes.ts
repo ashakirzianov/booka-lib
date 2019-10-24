@@ -5,7 +5,21 @@ import { authOpt } from './auth';
 
 export const router = createRouter<LibContract>();
 
-router.get('/download', async ctx => {
+router.get('/search', async ctx => {
+    const query = ctx.query.query ?? '';
+    const page = ctx.query.page ?? 0;
+
+    const result = await books.search(query, page);
+
+    return {
+        success: {
+            values: result,
+            next: page + 1,
+        },
+    };
+});
+
+router.get('/full', async ctx => {
     if (ctx.query.id) {
         const book = await books.byBookId(ctx.query.id);
         return book
@@ -32,11 +46,16 @@ router.get('/all', async ctx => {
     };
 });
 
-router.get('/info', async ctx => {
-    const ids = ctx.query.ids || [];
-    const infos = await books.infos(ids);
+router.get('/all', async ctx => {
+    const page = ctx.query.page ?? 0;
+    const result = await books.all(page);
 
-    return { success: infos };
+    return {
+        success: {
+            values: result,
+            next: page + 1,
+        },
+    };
 });
 
 router.post('/upload', authOpt(async ctx => {

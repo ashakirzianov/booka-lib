@@ -1,5 +1,5 @@
 import {
-    Book, BookDesc, filterUndefined,
+    Book, BookDesc, filterUndefined, SearchResult, KnownTag,
 } from 'booka-common';
 import { downloadStringAsset } from '../assets';
 import { TypeFromSchema, model, paginate } from 'booka-utils';
@@ -123,7 +123,19 @@ export async function search(query: string, page: number) {
         page,
     ).exec();
 
-    return result;
+    return result.map<SearchResult>(doc => {
+        return {
+            search: 'book',
+            desc: {
+                id: doc.bookId,
+                title: doc.title ?? 'no-title',
+                author: doc.author,
+                coverUrl: doc.cover,
+                smallCoverUrl: doc.coverSmall,
+                tags: (doc.tags ?? []) as KnownTag[],
+            },
+        };
+    });
 }
 
 async function isBookExists(bookId: string): Promise<boolean> {
