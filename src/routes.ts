@@ -1,6 +1,7 @@
 import { books } from './db';
 import { LibContract } from 'booka-common';
 import { createRouter } from 'booka-utils';
+import { authOpt } from './auth';
 
 export const router = createRouter<LibContract>();
 
@@ -38,14 +39,17 @@ router.get('/info', async ctx => {
     return { success: infos };
 });
 
-router.post('/upload', async ctx => {
+router.post('/upload', authOpt(async ctx => {
+    if (!ctx.account) {
+        return { fail: 'Not authorized' };
+    }
     const book = ctx.request.files.book;
     if (book) {
-        const bookId = await books.parseAndInsert(book.path);
+        const bookId = await books.uploadEpub(book.path, ctx.account._id);
         return bookId
             ? { success: bookId }
             : { fail: `Couldn't parse book` };
     }
 
     return { fail: 'File is not attached' };
-});
+}));

@@ -19,7 +19,7 @@ export async function uploadEpub(filePath: string, accountId: string) {
     return bookId;
 }
 
-export async function parseAndInsert(filePath: string) {
+async function parseAndInsert(filePath: string) {
     const processResult = await processFile(filePath);
     if (processResult.alreadyExist) {
         return processResult.bookId;
