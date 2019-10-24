@@ -43,7 +43,7 @@
     "nodemon": "^1.18.7",
     "ts-jest": "^24.0.2",
     "tslint": "^5.11.0",
-    "typescript": "^3.5.3"
+    "typescript": "beta"
   },
   "dependencies": {
     "aws-sdk": "^2.508.0",
