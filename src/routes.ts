@@ -1,5 +1,5 @@
 import { books } from './db';
-import { LibContract } from 'booka-common';
+import { LibContract, fragmentForPath } from 'booka-common';
 import { createRouter } from 'booka-utils';
 import { authOpt } from './auth';
 
@@ -17,6 +17,21 @@ router.get('/search', async ctx => {
             next: page + 1,
         },
     };
+});
+
+router.get('/fragment', async ctx => {
+    const body = ctx.request.body;
+    if (!body) {
+        return { fail: 'Locator should be specified in body' };
+    }
+
+    const book = await books.byBookId(body.id);
+    if (!book) {
+        return { fail: 'Book not found' };
+    }
+
+    const fragment = fragmentForPath(book, body.path);
+    return { success: fragment };
 });
 
 router.get('/full', async ctx => {
