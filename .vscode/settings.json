@@ -30,6 +30,7 @@
         "dups",
         "epub",
         "fbtoken",
+        "kinesisvideomedia",
         "multiline",
         "paren",
         "parens",
@@ -43,6 +44,7 @@
         "reresult",
         "rgrove",
         "slugify",
+        "submodule",
         "titlepage",
         "traum",
         "upsert",
@@ -52,4 +54,5 @@
         "zipfile"
     ],
     "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.tsdk": "node_modules/typescript/lib",
 }
