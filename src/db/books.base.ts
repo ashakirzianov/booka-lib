@@ -111,6 +111,21 @@ export async function count() {
     return docs.countDocuments().exec();
 }
 
+export async function search(query: string, page: number) {
+    const q = { $regex: `.*${query}.*` };
+    const result = await paginate(
+        docs.find({
+            $or: [
+                { title: q },
+                { author: q },
+            ],
+        }),
+        page,
+    ).exec();
+
+    return result;
+}
+
 async function isBookExists(bookId: string): Promise<boolean> {
     const book = await docs.findOne({ bookId });
     return book !== null;
