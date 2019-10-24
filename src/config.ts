@@ -5,6 +5,7 @@ export function config(): Config {
 }
 
 const commonConfig: Config = {
+    backendBase: 'https://reader-back.herokuapp.com',
     defaultPort: 3141,
     bucket: {
         json: 'booka-lib-json',
@@ -39,6 +40,7 @@ export type SslConfig = {
 };
 
 export type Config = {
+    backendBase: string,
     defaultPort: number,
     bucket: {
         json: string,
