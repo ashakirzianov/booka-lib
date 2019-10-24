@@ -9,8 +9,15 @@ import {
 import { logger } from '../log';
 import { uploadBody } from '../assets';
 import { generateBookId, DbBook, docs } from './books.base';
+import { uploads } from './uploads';
 
 const bookaExt = '.booka';
+
+export async function uploadEpub(filePath: string, accountId: string) {
+    const bookId = await parseAndInsert(filePath);
+    await uploads.addUpload(accountId, bookId);
+    return bookId;
+}
 
 export async function parseAndInsert(filePath: string) {
     const processResult = await processFile(filePath);
