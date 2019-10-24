@@ -1,5 +1,5 @@
 import { books } from './db';
-import { LibContract, fragmentForPath } from 'booka-common';
+import { LibContract, fragmentForPath, previewForPath } from 'booka-common';
 import { createRouter } from 'booka-utils';
 import { authOpt } from './auth';
 
@@ -87,3 +87,23 @@ router.post('/upload', authOpt(async ctx => {
 
     return { fail: 'File is not attached' };
 }));
+
+router.get('/previews', async ctx => {
+    const locators = ctx.request.body;
+    if (!locators) {
+        return { fail: 'Locators should be specified in body' };
+    }
+
+    const results = await Promise.all(
+        locators.map(async l => {
+            const book = await books.byBookId(l.id);
+            if (!book) {
+                return undefined;
+            }
+            const preview = previewForPath(book, l.path);
+            return preview;
+        })
+    );
+
+    return { success: results };
+});
