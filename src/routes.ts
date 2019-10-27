@@ -50,7 +50,9 @@ router.get('/full', async ctx => {
 });
 
 router.get('/all', async ctx => {
-    const page = ctx.query && ctx.query.page || 0;
+    // TODO: fix this nonsense
+    const pageString = (ctx.query && ctx.query.page as any as string) || '0';
+    const page = parseInt(pageString, 10) ?? 0;
     const allBooks = await books.all(page);
 
     return {
