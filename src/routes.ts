@@ -53,7 +53,7 @@ router.get('/all', async ctx => {
     // TODO: fix this nonsense
     const pageString = (ctx.query && ctx.query.page as any as string) || '0';
     const page = parseInt(pageString, 10) ?? 0;
-    const allBooks = await books.all(page);
+    const allBooks = await books.all(0);
 
     return {
         success: {
