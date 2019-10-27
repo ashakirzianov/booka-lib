@@ -76,7 +76,7 @@ export async function all(page: number): Promise<BookDesc[]> {
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        (bookDb): BookDesc | undefined => bookDb.id
+        (bookDb): BookDesc | undefined => bookDb.bookId
             ? {
                 author: bookDb.author,
                 // TODO: better solution for missing title
