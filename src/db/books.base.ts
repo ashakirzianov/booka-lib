@@ -171,3 +171,24 @@ function transliterate(str: string) {
     const result = slugify(str, { allowedChars: 'a-zA-Z0-9-_' });
     return result;
 }
+
+const bookCache: {
+    [k: string]: Book,
+} = {};
+async function downloadBook(assetId: string) {
+    const cached = bookCache[assetId];
+    if (cached) {
+        return cached;
+    }
+
+    const json = await downloadStringAsset('booka-lib-json', assetId);
+    if (json) {
+        const parsed = JSON.parse(json);
+        const contract = parsed as Book;
+        bookCache[assetId] = contract;
+
+        return contract;
+    } else {
+        return undefined;
+    }
+}
