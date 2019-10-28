@@ -31,10 +31,7 @@ router.get('/fragment', async ctx => {
     const pathString = ctx.query.path;
     const path = pathString === undefined
         ? emptyPath()
-        : pathFromString(pathString);
-    if (!path) {
-        return { fail: 'Book path is not specified' };
-    }
+        : pathFromString(pathString) ?? [];
 
     const book = await books.byBookId(id);
     if (!book) {
