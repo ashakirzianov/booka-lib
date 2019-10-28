@@ -58,15 +58,7 @@ export async function byBookId(id: string) {
         return undefined;
     }
 
-    const json = await downloadStringAsset('booka-lib-json', book.jsonAssetId);
-    if (json) {
-        const parsed = JSON.parse(json);
-        const contract = parsed as Book;
-
-        return contract;
-    } else {
-        return undefined;
-    }
+    return downloadBook(book.jsonAssetId);
 }
 
 export async function all(page: number): Promise<BookDesc[]> {
