@@ -1,5 +1,8 @@
 import { books } from './db';
-import { LibContract, fragmentForPath, previewForPath } from 'booka-common';
+import {
+    LibContract, fragmentForPath, previewForPath,
+    emptyPath, pathFromString,
+} from 'booka-common';
 import { createRouter } from 'booka-utils';
 import { authOpt } from './auth';
 
@@ -20,17 +23,24 @@ router.get('/search', async ctx => {
 });
 
 router.get('/fragment', async ctx => {
-    const body = ctx.request.body;
-    if (!body) {
-        return { fail: 'Locator should be specified in body' };
+    const id = ctx.query.id;
+    if (!id) {
+        return { fail: 'Book id is not specified' };
     }
 
-    const book = await books.byBookId(body.id);
+    const pathString = ctx.query.path;
+    const path = pathString === undefined
+        ? emptyPath()
+        : pathFromString(pathString);
+    if (!path) {
+        return { fail: 'Book path is not specified' };
+    }
+
+    const book = await books.byBookId(id);
     if (!book) {
-        return { fail: 'Book not found' };
+        return { fail: `Could not find book: ${id}` };
     }
-
-    const fragment = fragmentForPath(book, body.path);
+    const fragment = fragmentForPath(book, path);
     return { success: fragment };
 });
 
@@ -90,7 +100,7 @@ router.post('/upload', authOpt(async ctx => {
     return { fail: 'File is not attached' };
 }));
 
-router.get('/previews', async ctx => {
+router.post('/previews', async ctx => {
     const locators = ctx.request.body;
     if (!locators) {
         return { fail: 'Locators should be specified in body' };
