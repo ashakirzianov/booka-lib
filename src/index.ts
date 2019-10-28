@@ -19,6 +19,7 @@ async function startup(app: Koa) {
 
     app.use(logger());
     app.use(koaBody({
+        parsedMethods: ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'],
         multipart: true,
         formLimit: 50 * 1024 * 1024,
     }));
