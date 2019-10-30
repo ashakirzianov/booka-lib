@@ -37,7 +37,7 @@ router.get('/fragment', async ctx => {
     if (!book) {
         return { fail: `Could not find book: ${id}` };
     }
-    const fragment = fragmentForPath(book, path);
+    const fragment = fragmentForPath(book, path, 1500);
     return { success: fragment };
 });
 
