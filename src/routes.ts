@@ -1,7 +1,7 @@
 import { books } from './db';
 import {
     LibContract, fragmentForPath, previewForPath,
-    emptyPath, pathFromString,
+    emptyPath, pathFromString, defaultFragmentLength,
 } from 'booka-common';
 import { createRouter } from 'booka-utils';
 import { authOpt } from './auth';
@@ -37,7 +37,7 @@ router.get('/fragment', async ctx => {
     if (!book) {
         return { fail: `Could not find book: ${id}` };
     }
-    const fragment = fragmentForPath(book, path, 1500);
+    const fragment = fragmentForPath(book, path, defaultFragmentLength);
     return { success: fragment };
 });
 
