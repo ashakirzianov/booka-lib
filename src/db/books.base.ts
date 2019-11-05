@@ -1,9 +1,8 @@
 import {
     Book, BookDesc, filterUndefined, SearchResult, KnownTag,
 } from 'booka-common';
-import { downloadStringAsset } from '../assets';
-import { TypeFromSchema, model, paginate } from 'booka-utils';
-import { slugify } from 'transliteration';
+import { TypeFromSchema, model, paginate, taggedObject } from 'booka-utils';
+import { downloadStringAsset, Bucket } from '../assets';
 
 const schema = {
     author: {
@@ -16,15 +15,20 @@ const schema = {
     },
     cover: String,
     coverSmall: String,
-    bookId: {
+    bookAlias: {
         type: String,
         index: true,
+        required: true,
+    },
+    jsonBucketId: {
+        type: String,
         required: true,
     },
     jsonAssetId: {
         type: String,
         required: true,
     },
+    originalBucketId: String,
     originalAssetId: String,
     fileHash: {
         type: String,
@@ -39,7 +43,7 @@ const schema = {
         required: true,
     },
     tags: {
-        type: [Object],
+        type: [taggedObject<KnownTag>()],
         required: true,
     },
     textLength: {
@@ -53,29 +57,30 @@ export type DbBook = TypeFromSchema<typeof schema>;
 export const docs = model('Book', schema);
 
 export async function byBookId(id: string) {
-    const book = await docs.findOne({ bookId: id }).exec();
-    if (!book || !book.jsonAssetId) {
+    const book = await docs.findById(id).exec();
+    if (!book || !book.jsonAssetId || !book.jsonBucketId) {
         return undefined;
     }
 
-    return downloadBook(book.jsonAssetId);
+    return downloadBook(book.jsonAssetId, book.jsonBucketId as Bucket);
 }
 
 export async function all(page: number): Promise<BookDesc[]> {
     const bookMetas = await paginate(
         docs
-            .find({}, ['title', 'author', 'bookId', 'cover', 'coverSmall', 'license', 'tags']),
+            .find({}, ['title', 'author', 'bookAlias', 'cover', 'coverSmall', 'license', 'tags', '_id']),
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        (bookDb): BookDesc | undefined => bookDb.bookId
+        (bookDb): BookDesc | undefined => bookDb.bookAlias
             ? {
                 author: bookDb.author,
                 // TODO: better solution for missing title
                 title: bookDb.title || 'no-title',
                 coverUrl: bookDb.cover,
                 smallCoverUrl: bookDb.coverSmall,
-                id: bookDb.bookId,
+                id: bookDb._id,
+                alias: bookDb.bookAlias,
                 tags: bookDb.tags as any[],
             }
             : undefined
@@ -90,7 +95,8 @@ export async function infos(ids: string[]): Promise<BookDesc[]> {
         .exec();
 
     return result.map(r => ({
-        id: r.bookId,
+        id: r._id,
+        alias: r.bookAlias,
         tags: [],
         author: r.author,
         // TODO: better solution for missing title
@@ -119,7 +125,8 @@ export async function search(query: string, page: number) {
         return {
             search: 'book',
             desc: {
-                id: doc.bookId,
+                id: doc._id,
+                alias: doc.bookAlias,
                 title: doc.title ?? 'no-title',
                 author: doc.author,
                 coverUrl: doc.cover,
@@ -130,50 +137,16 @@ export async function search(query: string, page: number) {
     });
 }
 
-async function isBookExists(bookId: string): Promise<boolean> {
-    const book = await docs.findOne({ bookId });
-    return book !== null;
-}
-
-export async function generateBookId(title?: string, author?: string): Promise<string> {
-    // TODO: better solution for missing title
-    for (const bookId of bookIdCandidate(title || 'no-title', author)) {
-        if (!await isBookExists(bookId)) {
-            return bookId;
-        }
-    }
-
-    throw new Error('Could not generate book id');
-}
-
-function* bookIdCandidate(title: string, author?: string) {
-    let candidate = transliterate(title);
-    yield candidate;
-    if (author) {
-        candidate = transliterate(candidate + '-' + author);
-        yield candidate;
-    }
-
-    for (let i = 0; true; i++) {
-        yield candidate + '-' + i.toString();
-    }
-}
-
-function transliterate(str: string) {
-    const result = slugify(str, { allowedChars: 'a-zA-Z0-9-_' });
-    return result;
-}
-
 const bookCache: {
     [k: string]: Book,
 } = {};
-async function downloadBook(assetId: string) {
+async function downloadBook(assetId: string, bucket: Bucket) {
     const cached = bookCache[assetId];
     if (cached) {
         return cached;
     }
 
-    const json = await downloadStringAsset('booka-lib-json', assetId);
+    const json = await downloadStringAsset(bucket, assetId);
     if (json) {
         const parsed = JSON.parse(json);
         const contract = parsed as Book;
