@@ -6,10 +6,15 @@ import { filterUndefined, Result, success, failure } from 'booka-common';
 
 const service = new S3();
 
+export const pgJsonBucker = 'booka-lib-pg-json';
+export const uploadJsonBucket = 'booka-lib-upload-json';
+export const uploadEpubBucket = 'booka-lib-upload-epub';
+export const imagesBucket = 'booka-lib-images';
 export const buckets = [
-    'booka-lib-json',
-    'booka-lib-images',
-    'booka-lib-originals',
+    pgJsonBucker,
+    uploadJsonBucket,
+    uploadEpubBucket,
+    imagesBucket,
 ] as const;
 export type Bucket = typeof buckets[number];
 

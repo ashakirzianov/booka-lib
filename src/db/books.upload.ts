@@ -1,14 +1,15 @@
 import * as sharp from 'sharp';
 import { promisify } from 'util';
 import { readFile } from 'fs';
+import { slugify } from 'transliteration';
 import { parseEpub } from 'booka-parser';
 import {
     extractBookText, buildFileHash, buildBookHash, Book, getCoverBase64,
     compoundDiagnostic, Diagnostic, success, failure, Result,
 } from 'booka-common';
 import { logger } from '../log';
-import { uploadBody } from '../assets';
-import { generateBookId, DbBook, docs } from './books.base';
+import { uploadBody, uploadJsonBucket, uploadEpubBucket } from '../assets';
+import { DbBook, docs } from './books.base';
 import { uploads } from './uploads';
 
 const bookaExt = '.booka';
@@ -26,10 +27,10 @@ async function parseAndInsert(filePath: string) {
     }
     const { book, bookHash, fileHash } = processResult;
 
-    const bookId = await generateBookId(book.meta.title, book.meta.author);
+    const bookAlias = await generateBookAlias(book.meta.title, book.meta.author);
 
     const uploadResult = await uploadBookAsset({
-        bookId, book,
+        bookAlias, book,
         originalFilePath: filePath,
     });
     if (uploadResult.success) {
@@ -43,9 +44,11 @@ async function parseAndInsert(filePath: string) {
             author: book.meta.author,
             license: book.meta.license,
             cover: coverUrl,
+            jsonBucketId: uploadJsonBucket,
             jsonAssetId: uploadResult.value.json,
+            originalBucketId: uploadEpubBucket,
             originalAssetId: uploadResult.value.original,
-            bookId: bookId,
+            bookAlias: bookAlias,
             bookHash,
             fileHash,
             tags: book.tags,
@@ -54,12 +57,15 @@ async function parseAndInsert(filePath: string) {
 
         const inserted = await docs.insertMany(bookDocument);
         if (inserted) {
-            logger().important('Inserted book for id: ' + bookId);
-            return bookId;
+            logger().important('Inserted book with alias: ' + bookAlias);
+            return {
+                id: inserted._id,
+                alias: bookAlias,
+            };
         }
     }
 
-    throw new Error(`Couldn't insert book for id: '${bookId}'`);
+    throw new Error(`Couldn't insert book: '${bookAlias}'`);
 }
 
 async function processFile(filePath: string) {
@@ -68,7 +74,7 @@ async function processFile(filePath: string) {
     if (existingFile) {
         return {
             alreadyExist: true as const,
-            bookId: existingFile.bookId,
+            bookId: existingFile._id,
         };
     }
 
@@ -83,7 +89,7 @@ async function processFile(filePath: string) {
     if (existingBook) {
         return {
             alreadyExist: true as const,
-            bookId: existingBook.bookId,
+            bookId: existingBook._id,
         };
     }
 
@@ -95,23 +101,23 @@ async function processFile(filePath: string) {
 
 type UploadBookInput = {
     book: Book,
-    bookId: string,
+    bookAlias: string,
     originalFilePath: string,
 };
 type UploadBookOutput = {
     json: string,
     original?: string,
 };
-async function uploadBookAsset({ book, bookId, originalFilePath }: UploadBookInput): Promise<Result<UploadBookOutput>> {
+async function uploadBookAsset({ book, bookAlias, originalFilePath }: UploadBookInput): Promise<Result<UploadBookOutput>> {
     const diags: Diagnostic[] = [];
-    const key = `${bookId}${bookaExt}`;
-    const coverResult = await uploadCover(bookId, book);
+    const key = `${bookAlias}${bookaExt}`;
+    const coverResult = await uploadCover(bookAlias, book);
     diags.push(coverResult.diagnostic);
     const json = JSON.stringify(book);
-    const jsonResult = await uploadBody('booka-lib-json', key, json);
+    const jsonResult = await uploadBody(uploadJsonBucket, key, json);
     diags.push(jsonResult.diagnostic);
     if (jsonResult.success) {
-        const originalResult = await uploadOriginalFile(bookId, originalFilePath);
+        const originalResult = await uploadOriginalEpub(bookAlias, originalFilePath);
         diags.push(originalResult.diagnostic);
         if (originalResult.success) {
             return success(
@@ -187,10 +193,44 @@ async function resizeBookCover(buffer: Buffer): Promise<Buffer> {
         .toBuffer();
 }
 
-async function uploadOriginalFile(bookId: string, filePath: string) {
+async function uploadOriginalEpub(bookId: string, filePath: string) {
     const fileBody = await promisify(readFile)(filePath);
     const key = `${bookId}`;
-    const result = await uploadBody('booka-lib-originals', key, fileBody);
+    const result = await uploadBody(uploadEpubBucket, key, fileBody);
 
+    return result;
+}
+
+async function isBookExists(bookId: string): Promise<boolean> {
+    const book = await docs.findOne({ bookId });
+    return book !== null;
+}
+
+async function generateBookAlias(title?: string, author?: string): Promise<string> {
+    // TODO: better solution for missing title
+    for (const bookId of bookAliasCandidate(title || 'no-title', author)) {
+        if (!await isBookExists(bookId)) {
+            return bookId;
+        }
+    }
+
+    throw new Error('Could not generate book id');
+}
+
+function* bookAliasCandidate(title: string, author?: string) {
+    let candidate = transliterate(title);
+    yield candidate;
+    if (author) {
+        candidate = transliterate(candidate + '-' + author);
+        yield candidate;
+    }
+
+    for (let i = 0; true; i++) {
+        yield candidate + '-' + i.toString();
+    }
+}
+
+function transliterate(str: string) {
+    const result = slugify(str, { allowedChars: 'a-zA-Z0-9-_' });
     return result;
 }
