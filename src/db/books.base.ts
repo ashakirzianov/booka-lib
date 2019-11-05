@@ -58,15 +58,7 @@ export async function byBookId(id: string) {
         return undefined;
     }
 
-    const json = await downloadStringAsset('booka-lib-json', book.jsonAssetId);
-    if (json) {
-        const parsed = JSON.parse(json);
-        const contract = parsed as Book;
-
-        return contract;
-    } else {
-        return undefined;
-    }
+    return downloadBook(book.jsonAssetId);
 }
 
 export async function all(page: number): Promise<BookDesc[]> {
@@ -76,7 +68,7 @@ export async function all(page: number): Promise<BookDesc[]> {
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        (bookDb): BookDesc | undefined => bookDb.id
+        (bookDb): BookDesc | undefined => bookDb.bookId
             ? {
                 author: bookDb.author,
                 // TODO: better solution for missing title
@@ -170,4 +162,25 @@ function* bookIdCandidate(title: string, author?: string) {
 function transliterate(str: string) {
     const result = slugify(str, { allowedChars: 'a-zA-Z0-9-_' });
     return result;
+}
+
+const bookCache: {
+    [k: string]: Book,
+} = {};
+async function downloadBook(assetId: string) {
+    const cached = bookCache[assetId];
+    if (cached) {
+        return cached;
+    }
+
+    const json = await downloadStringAsset('booka-lib-json', assetId);
+    if (json) {
+        const parsed = JSON.parse(json);
+        const contract = parsed as Book;
+        bookCache[assetId] = contract;
+
+        return contract;
+    } else {
+        return undefined;
+    }
 }

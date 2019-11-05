@@ -1,4 +1,5 @@
 import * as Koa from 'koa';
+import * as cors from '@koa/cors';
 import * as koaBody from 'koa-body';
 import * as logger from 'koa-logger';
 import { config as configEnv } from 'dotenv';
@@ -18,8 +19,12 @@ async function startup(app: Koa) {
 
     app.use(logger());
     app.use(koaBody({
+        parsedMethods: ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'],
         multipart: true,
         formLimit: 50 * 1024 * 1024,
+    }));
+    app.use(cors({
+        origin: '*',
     }));
 
     app
