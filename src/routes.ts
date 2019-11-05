@@ -1,7 +1,7 @@
 import { books } from './db';
 import {
     LibContract, fragmentForPath, previewForPath,
-    emptyPath, pathFromString, defaultFragmentLength,
+    firstPath, pathFromString, defaultFragmentLength,
 } from 'booka-common';
 import { createRouter } from 'booka-utils';
 import { authOpt } from './auth';
@@ -30,8 +30,8 @@ router.get('/fragment', async ctx => {
 
     const pathString = ctx.query.path;
     const path = pathString === undefined
-        ? emptyPath()
-        : pathFromString(pathString) ?? [];
+        ? firstPath()
+        : pathFromString(pathString) ?? firstPath();
 
     const book = await books.byBookId(id);
     if (!book) {
