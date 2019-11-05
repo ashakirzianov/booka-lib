@@ -1,8 +1,8 @@
 import {
     Book, BookDesc, filterUndefined, SearchResult, KnownTag,
 } from 'booka-common';
-import { downloadStringAsset, Bucket } from '../assets';
 import { TypeFromSchema, model, paginate, taggedObject } from 'booka-utils';
+import { downloadStringAsset, Bucket } from '../assets';
 
 const schema = {
     author: {
