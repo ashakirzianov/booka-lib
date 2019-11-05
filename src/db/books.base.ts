@@ -2,7 +2,7 @@ import {
     Book, BookDesc, filterUndefined, SearchResult, KnownTag,
 } from 'booka-common';
 import { downloadStringAsset } from '../assets';
-import { TypeFromSchema, model, paginate } from 'booka-utils';
+import { TypeFromSchema, model, paginate, taggedObject } from 'booka-utils';
 import { slugify } from 'transliteration';
 
 const schema = {
@@ -39,7 +39,7 @@ const schema = {
         required: true,
     },
     tags: {
-        type: [Object],
+        type: [taggedObject<KnownTag>()],
         required: true,
     },
     textLength: {
