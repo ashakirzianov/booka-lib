@@ -52,7 +52,7 @@
     "axios": "^0.19.0",
     "booka-common": "^0.12.2",
     "booka-parser": "^0.7.3",
-    "booka-utils": "^0.1.5",
+    "booka-utils": "^0.1.6",
     "dotenv": "^8.0.0",
     "koa": "^2.7.0",
     "koa-body": "^4.1.0",
