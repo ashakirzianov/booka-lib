@@ -97,22 +97,19 @@ router.post('/upload', authOpt(async ctx => {
     return { fail: 'File is not attached' };
 }));
 
-router.post('/previews', async ctx => {
-    const locators = ctx.request.body;
-    if (!locators) {
-        return { fail: 'Locators should be specified in body' };
+router.post('/meta', async ctx => {
+    const body = ctx.request.body;
+    if (!body) {
+        return { fail: 'Book id be specified in body' };
     }
-
-    const results = await Promise.all(
-        locators.map(async l => {
-            const book = await books.byBookId(l.id);
-            if (!book) {
-                return undefined;
-            }
-            const preview = previewForPath(book, l.path);
-            return preview;
-        })
-    );
-
-    return { success: results };
+    const desc = await books.meta(body.id);
+    if (desc === undefined) {
+        return { fail: `Couldn't find book for id: ${body.id}` };
+    }
+    return {
+        success: {
+            desc,
+            previews: body.previews.map(path => previewForPath ?? 'no-preview'),
+        },
+    };
 });

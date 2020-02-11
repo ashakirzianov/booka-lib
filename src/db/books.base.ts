@@ -65,6 +65,22 @@ export async function byBookId(id: string) {
     return downloadBook(book.jsonAssetId, book.jsonBucketId as Bucket);
 }
 
+export async function meta(bookId: string): Promise<BookDesc | undefined> {
+    const bookDb = await docs.findById(bookId);
+    return bookDb
+        ? {
+            author: bookDb.author,
+            // TODO: better solution for missing title
+            title: bookDb.title || 'no-title',
+            coverUrl: bookDb.cover,
+            smallCoverUrl: bookDb.coverSmall,
+            id: bookDb._id,
+            alias: bookDb.bookAlias,
+            tags: bookDb.tags as any[],
+        }
+        : undefined;
+}
+
 export async function all(page: number): Promise<BookDesc[]> {
     const bookMetas = await paginate(
         docs
