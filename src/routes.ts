@@ -103,13 +103,14 @@ router.post('/meta', async ctx => {
         return { fail: 'Book id be specified in body' };
     }
     const desc = await books.meta(body.id);
-    if (desc === undefined) {
+    const book = await books.byBookId(body.id);
+    if (desc === undefined || book === undefined) {
         return { fail: `Couldn't find book for id: ${body.id}` };
     }
     return {
         success: {
             desc,
-            previews: body.previews.map(path => previewForPath ?? 'no-preview'),
+            previews: body.previews.map(path => previewForPath(book, path) ?? 'no-preview'),
         },
     };
 });
