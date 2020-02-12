@@ -4,11 +4,15 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug",
+      "name": "Debug Local",
       "preLaunchTask": "watch",
       "program": "${workspaceFolder}/src/index.ts",
       "cwd": "${workspaceFolder}",
       "protocol": "inspector",
+      "env": {
+        "NODE_ENV": "development",
+        "LOCAL": "all"
+      },
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
       ]

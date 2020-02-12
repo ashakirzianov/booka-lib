@@ -97,22 +97,29 @@ router.post('/upload', authOpt(async ctx => {
     return { fail: 'File is not attached' };
 }));
 
-router.post('/previews', async ctx => {
-    const locators = ctx.request.body;
-    if (!locators) {
-        return { fail: 'Locators should be specified in body' };
+router.post('/card/batch', async ctx => {
+    const body = ctx.request.body;
+    if (!body) {
+        return { fail: 'Book id be specified in body' };
     }
-
-    const results = await Promise.all(
-        locators.map(async l => {
-            const book = await books.byBookId(l.id);
-            if (!book) {
+    const results = await Promise.all(body.map(async ({ id, previews }) => {
+        const card = await books.card(id);
+        if (card === undefined) {
+            return undefined;
+        }
+        if (previews?.length) {
+            const book = await books.byBookId(id);
+            if (book === undefined) {
                 return undefined;
             }
-            const preview = previewForPath(book, l.path);
-            return preview;
-        })
-    );
-
+            const resolvedPreviews = previews.map(path => previewForPath(book, path));
+            return {
+                card,
+                previews: resolvedPreviews,
+            };
+        } else {
+            return { card, previews: [] };
+        }
+    }));
     return { success: results };
 });
