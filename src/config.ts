@@ -14,9 +14,13 @@ const commonConfig: Config = {
     },
 };
 
+const useLocalServices = process.env.LOCAL === 'env';
 function debugConfig(): Config {
     return {
         ...commonConfig,
+        backendBase: useLocalServices
+            ? 'http://localhost:3042'
+            : commonConfig.backendBase,
         // ssl: {
         //     keyPath: 'server.key',
         //     certPath: 'server.crt',

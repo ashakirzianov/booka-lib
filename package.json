@@ -9,6 +9,7 @@
     "build-ts": "tsc",
     "build": "npm run build-ts && npm run lint",
     "debug": "tsc -w & cross-env NODE_ENV=development nodemon dist/index.js",
+    "debug-local": "tsc -w & cross-env NODE_ENV=development LOCAL=all nodemon dist/index.js",
     "serve": "node dist/index.js",
     "start": "npm run serve",
     "test": "jest"
