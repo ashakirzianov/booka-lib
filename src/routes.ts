@@ -97,20 +97,29 @@ router.post('/upload', authOpt(async ctx => {
     return { fail: 'File is not attached' };
 }));
 
-router.post('/meta', async ctx => {
+router.post('/card/batch', async ctx => {
     const body = ctx.request.body;
     if (!body) {
         return { fail: 'Book id be specified in body' };
     }
-    const desc = await books.meta(body.id);
-    const book = await books.byBookId(body.id);
-    if (desc === undefined || book === undefined) {
-        return { fail: `Couldn't find book for id: ${body.id}` };
-    }
-    return {
-        success: {
-            desc,
-            previews: body.previews.map(path => previewForPath(book, path) ?? 'no-preview'),
-        },
-    };
+    const results = await Promise.all(body.map(async ({ id, previews }) => {
+        const card = await books.card(id);
+        if (card === undefined) {
+            return undefined;
+        }
+        if (previews?.length) {
+            const book = await books.byBookId(id);
+            if (book === undefined) {
+                return undefined;
+            }
+            const resolvedPreviews = previews.map(path => previewForPath(book, path));
+            return {
+                card,
+                previews: resolvedPreviews,
+            };
+        } else {
+            return { card, previews: [] };
+        }
+    }));
+    return { success: results };
 });

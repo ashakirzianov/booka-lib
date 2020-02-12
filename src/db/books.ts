@@ -1,10 +1,10 @@
-import { byBookId, all, count, infos, search, meta } from './books.base';
+import { byBookId, all, count, infos, search, card } from './books.base';
 import { uploadEpub } from './books.upload';
 export const books = {
     byBookId,
     uploadEpub,
     all,
-    meta,
+    card,
     count,
     infos,
     search,

@@ -1,5 +1,5 @@
 import {
-    Book, BookDesc, filterUndefined, SearchResult, KnownTag,
+    Book, LibraryCard, filterUndefined, SearchResult, KnownTag,
 } from 'booka-common';
 import { TypeFromSchema, model, paginate, taggedObject } from 'booka-utils';
 import { downloadStringAsset, Bucket } from '../assets';
@@ -65,7 +65,7 @@ export async function byBookId(id: string) {
     return downloadBook(book.jsonAssetId, book.jsonBucketId as Bucket);
 }
 
-export async function meta(bookId: string): Promise<BookDesc | undefined> {
+export async function card(bookId: string): Promise<LibraryCard | undefined> {
     const bookDb = await docs.findById(bookId);
     return bookDb
         ? {
@@ -81,14 +81,14 @@ export async function meta(bookId: string): Promise<BookDesc | undefined> {
         : undefined;
 }
 
-export async function all(page: number): Promise<BookDesc[]> {
+export async function all(page: number): Promise<LibraryCard[]> {
     const bookMetas = await paginate(
         docs
             .find({}, ['title', 'author', 'bookAlias', 'cover', 'coverSmall', 'license', 'tags', '_id']),
         page,
     ).exec();
     const allMetas = bookMetas.map(
-        (bookDb): BookDesc | undefined => bookDb.bookAlias
+        (bookDb): LibraryCard | undefined => bookDb.bookAlias
             ? {
                 author: bookDb.author,
                 // TODO: better solution for missing title
@@ -105,7 +105,7 @@ export async function all(page: number): Promise<BookDesc[]> {
     return filterUndefined(allMetas);
 }
 
-export async function infos(ids: string[]): Promise<BookDesc[]> {
+export async function infos(ids: string[]): Promise<LibraryCard[]> {
     const result = await docs
         .find({ id: { $in: ids } })
         .exec();
