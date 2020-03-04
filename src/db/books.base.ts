@@ -81,46 +81,6 @@ export async function card(bookId: string): Promise<LibraryCard | undefined> {
         : undefined;
 }
 
-export async function all(page: number): Promise<LibraryCard[]> {
-    const bookMetas = await paginate(
-        docs
-            .find({}, ['title', 'author', 'bookAlias', 'cover', 'coverSmall', 'license', 'tags', '_id']),
-        page,
-    ).exec();
-    const allMetas = bookMetas.map(
-        (bookDb): LibraryCard | undefined => bookDb.bookAlias
-            ? {
-                author: bookDb.author,
-                // TODO: better solution for missing title
-                title: bookDb.title || 'no-title',
-                coverUrl: bookDb.cover,
-                smallCoverUrl: bookDb.coverSmall,
-                id: bookDb._id,
-                alias: bookDb.bookAlias,
-                tags: bookDb.tags as any[],
-            }
-            : undefined
-    );
-
-    return filterUndefined(allMetas);
-}
-
-export async function infos(ids: string[]): Promise<LibraryCard[]> {
-    const result = await docs
-        .find({ id: { $in: ids } })
-        .exec();
-
-    return result.map(r => ({
-        id: r._id,
-        alias: r.bookAlias,
-        tags: [],
-        author: r.author,
-        // TODO: better solution for missing title
-        title: r.title || 'no-title',
-        cover: r.cover,
-    }));
-}
-
 export async function count() {
     return docs.countDocuments().exec();
 }

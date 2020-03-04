@@ -33,53 +33,25 @@ router.get('/fragment', async ctx => {
         ? firstPath()
         : pathFromString(pathString) ?? firstPath();
 
+    const card = await books.card(id);
     const book = await books.byBookId(id);
-    if (!book) {
+    if (!book || !card) {
         return { fail: `Could not find book: ${id}` };
     }
     const fragment = fragmentForPath(book, path, defaultFragmentLength);
-    return { success: fragment };
+    return { success: { fragment, card } };
 });
 
 router.get('/full', async ctx => {
     if (ctx.query.id) {
+        const card = await books.card(ctx.query.id);
         const book = await books.byBookId(ctx.query.id);
-        return book
-            ? {
-                success: book,
-            }
-            : {
-                fail: `Couldn't find book for id: '${ctx.query.id}'`,
-            };
+        return book && card
+            ? { success: { book, card } }
+            : { fail: `Couldn't find book for id: '${ctx.query.id}'` };
     } else {
         return { fail: 'Book id is not specified' };
     }
-});
-
-router.get('/all', async ctx => {
-    // TODO: fix this nonsense
-    const pageString = (ctx.query && ctx.query.page as any as string) || '0';
-    const page = parseInt(pageString, 10) ?? 0;
-    const allBooks = await books.all(page);
-
-    return {
-        success: {
-            next: page + 1,
-            values: allBooks,
-        },
-    };
-});
-
-router.get('/all', async ctx => {
-    const page = ctx.query.page ?? 0;
-    const result = await books.all(page);
-
-    return {
-        success: {
-            values: result,
-            next: page + 1,
-        },
-    };
 });
 
 router.post('/upload', authOpt(async ctx => {
