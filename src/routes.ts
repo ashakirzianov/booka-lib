@@ -54,32 +54,6 @@ router.get('/full', async ctx => {
     }
 });
 
-router.get('/all', async ctx => {
-    // TODO: fix this nonsense
-    const pageString = (ctx.query && ctx.query.page as any as string) || '0';
-    const page = parseInt(pageString, 10) ?? 0;
-    const allBooks = await books.all(page);
-
-    return {
-        success: {
-            next: page + 1,
-            values: allBooks,
-        },
-    };
-});
-
-router.get('/all', async ctx => {
-    const page = ctx.query.page ?? 0;
-    const result = await books.all(page);
-
-    return {
-        success: {
-            values: result,
-            next: page + 1,
-        },
-    };
-});
-
 router.post('/upload', authOpt(async ctx => {
     if (!ctx.account) {
         return { fail: 'Not authorized' };
