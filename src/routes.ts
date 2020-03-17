@@ -69,6 +69,17 @@ router.post('/upload', authOpt(async ctx => {
     return { fail: 'File is not attached' };
 }));
 
+router.get('/card', async ctx => {
+    const bookId = ctx.query.id;
+    if (!bookId) {
+        return { fail: 'Book id not specified' };
+    }
+    const card = await books.card(bookId);
+    return card
+        ? { success: card }
+        : { fail: `Could not find card for id: ${bookId}` };
+});
+
 router.post('/card/batch', async ctx => {
     const body = ctx.request.body;
     if (!body) {
@@ -77,12 +88,12 @@ router.post('/card/batch', async ctx => {
     const results = await Promise.all(body.map(async ({ id, previews }) => {
         const card = await books.card(id);
         if (card === undefined) {
-            return undefined;
+            throw new Error(`Could not find card for id: ${id}`);
         }
         if (previews?.length) {
             const book = await books.byBookId(id);
             if (book === undefined) {
-                return undefined;
+                throw new Error(`Could not find book for id: ${id}`);
             }
             const resolvedPreviews = previews.map(path => previewForPath(book, path));
             return {
