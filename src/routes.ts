@@ -69,6 +69,17 @@ router.post('/upload', authOpt(async ctx => {
     return { fail: 'File is not attached' };
 }));
 
+router.get('/card', async ctx => {
+    const bookId = ctx.query.id;
+    if (!bookId) {
+        return { fail: 'Book id not specified' };
+    }
+    const card = await books.card(bookId);
+    return card
+        ? { success: card }
+        : { fail: `Could not find card for id: ${bookId}` };
+});
+
 router.post('/card/batch', async ctx => {
     const body = ctx.request.body;
     if (!body) {
