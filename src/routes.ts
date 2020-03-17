@@ -77,12 +77,12 @@ router.post('/card/batch', async ctx => {
     const results = await Promise.all(body.map(async ({ id, previews }) => {
         const card = await books.card(id);
         if (card === undefined) {
-            return undefined;
+            throw new Error(`Could not find card for id: ${id}`);
         }
         if (previews?.length) {
             const book = await books.byBookId(id);
             if (book === undefined) {
-                return undefined;
+                throw new Error(`Could not find book for id: ${id}`);
             }
             const resolvedPreviews = previews.map(path => previewForPath(book, path));
             return {
