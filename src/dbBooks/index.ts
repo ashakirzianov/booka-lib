@@ -1,5 +1,6 @@
-import { byBookId, count, search, card } from './docs';
-import { uploadEpub } from './upload';
+import {
+    byBookId, count, search, card, uploadEpub,
+} from './books';
 export const books = {
     byBookId,
     uploadEpub,
