@@ -1,13 +1,13 @@
-import { slugify } from 'transliteration';
 import { parseEpub } from 'booka-parser';
 import {
     extractBookText, buildFileHash, buildBookHash,
 } from 'booka-common';
 import { logger } from '../log';
 import { uploadJsonBucket, uploadEpubBucket } from '../assets';
-import { DbBook, docs } from './docs';
 import { uploads } from '../dbUploads';
+import { DbBook, docs } from './docs';
 import { uploadBookAsset } from './storage';
+import { generateBookAlias } from './alias';
 
 export async function uploadEpub({
     filePath, publicDomain, accountId,
@@ -132,38 +132,4 @@ async function checkForBookDuplicates(bookHash: string) {
     return matchBookHash
         ? matchBookHash
         : undefined;
-}
-
-async function isBookExists(bookId: string): Promise<boolean> {
-    const book = await docs.findOne({ bookId });
-    return book !== null;
-}
-
-async function generateBookAlias(title?: string, author?: string): Promise<string> {
-    // TODO: better solution for missing title
-    for (const bookId of bookAliasCandidate(title || 'no-title', author)) {
-        if (!await isBookExists(bookId)) {
-            return bookId;
-        }
-    }
-
-    throw new Error('Could not generate book id');
-}
-
-function* bookAliasCandidate(title: string, author?: string) {
-    let candidate = transliterate(title);
-    yield candidate;
-    if (author) {
-        candidate = transliterate(candidate + '-' + author);
-        yield candidate;
-    }
-
-    for (let i = 0; true; i++) {
-        yield candidate + '-' + i.toString();
-    }
-}
-
-function transliterate(str: string) {
-    const result = slugify(str, { allowedChars: 'a-zA-Z0-9-_' });
-    return result;
 }
