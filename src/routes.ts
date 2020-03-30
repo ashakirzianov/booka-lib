@@ -5,6 +5,7 @@ import {
 } from 'booka-common';
 import { createRouter } from 'booka-utils';
 import { authOpt } from './auth';
+import { uploads } from './dbUploads';
 
 export const router = createRouter<LibContract>();
 
@@ -111,3 +112,14 @@ router.post('/card/batch', async ctx => {
     }));
     return { success: results };
 });
+
+router.get('/user-uploads', authOpt(async ctx => {
+    const account = ctx.account;
+    if (!account) {
+        return { fail: 'Not authorized' };
+    }
+
+    const bookIds = await uploads.all(account._id);
+    const cards = await books.cards(bookIds);
+    return { success: { cards } };
+}));

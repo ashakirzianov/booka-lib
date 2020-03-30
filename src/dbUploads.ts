@@ -26,6 +26,12 @@ async function addUpload(accountId: string, bookId: string) {
     return result;
 }
 
+async function all(accountId: string) {
+    const results = await docs.find({ accountId }).exec();
+    return results.map(r => r.bookId);
+}
+
 export const uploads = {
     addUpload,
+    all,
 };
