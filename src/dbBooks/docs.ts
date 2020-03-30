@@ -1,8 +1,9 @@
 import {
-    Book, LibraryCard, SearchResult, KnownTag,
+    LibraryCard, SearchResult, KnownTag,
 } from 'booka-common';
 import { TypeFromSchema, model, paginate, taggedObject } from 'booka-utils';
-import { downloadStringAsset, Bucket } from '../assets';
+import { downloadBook } from './storage';
+import { Bucket } from '../assets';
 
 const schema = {
     author: {
@@ -111,25 +112,4 @@ export async function search(query: string, page: number) {
             },
         };
     });
-}
-
-const bookCache: {
-    [k: string]: Book,
-} = {};
-async function downloadBook(assetId: string, bucket: Bucket) {
-    const cached = bookCache[assetId];
-    if (cached) {
-        return cached;
-    }
-
-    const json = await downloadStringAsset(bucket, assetId);
-    if (json) {
-        const parsed = JSON.parse(json);
-        const contract = parsed as Book;
-        bookCache[assetId] = contract;
-
-        return contract;
-    } else {
-        return undefined;
-    }
 }
