@@ -1,4 +1,4 @@
-import { books } from './db';
+import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
     firstPath, pathFromString, defaultFragmentLength,

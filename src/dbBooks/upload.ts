@@ -9,8 +9,8 @@ import {
 } from 'booka-common';
 import { logger } from '../log';
 import { uploadBody, uploadJsonBucket, uploadEpubBucket } from '../assets';
-import { DbBook, docs } from './books.base';
-import { uploads } from './uploads';
+import { DbBook, docs } from './docs';
+import { uploads } from '../dbUploads';
 
 const bookaExt = '.booka';
 

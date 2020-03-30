@@ -1,5 +1,5 @@
 import {
-    Book, LibraryCard, filterUndefined, SearchResult, KnownTag,
+    Book, LibraryCard, SearchResult, KnownTag,
 } from 'booka-common';
 import { TypeFromSchema, model, paginate, taggedObject } from 'booka-utils';
 import { downloadStringAsset, Bucket } from '../assets';
