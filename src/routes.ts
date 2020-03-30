@@ -121,5 +121,5 @@ router.get('/user-uploads', authOpt(async ctx => {
 
     const bookIds = await uploads.all(account._id);
     const cards = await books.cards(bookIds);
-    return { success: { cards } };
+    return { success: { cards, name: 'uploads' } };
 }));
