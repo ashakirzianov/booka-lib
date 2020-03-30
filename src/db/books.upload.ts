@@ -14,14 +14,20 @@ import { uploads } from './uploads';
 
 const bookaExt = '.booka';
 
-export async function uploadEpub(filePath: string, accountId: string) {
-    const bookId = await parseAndInsert(filePath);
+export async function uploadEpub({
+    filePath, publicDomain, accountId,
+}: {
+    filePath: string,
+    publicDomain: boolean,
+    accountId: string,
+}) {
+    const bookId = await parseAndInsert(filePath, publicDomain);
     await uploads.addUpload(accountId, bookId);
     return bookId;
 }
 
-async function parseAndInsert(filePath: string) {
-    const processResult = await processFile(filePath);
+async function parseAndInsert(filePath: string, publicDomain: boolean) {
+    const processResult = await processFile(filePath, publicDomain);
     if (processResult.alreadyExist) {
         return processResult.bookId;
     }
@@ -68,10 +74,14 @@ async function parseAndInsert(filePath: string) {
     throw new Error(`Couldn't insert book: '${bookAlias}'`);
 }
 
-async function processFile(filePath: string) {
+async function processFile(filePath: string, publicDomain: boolean) {
     const fileHash = await buildFileHash(filePath);
     const existingFile = await checkForFileDuplicates(fileHash);
     if (existingFile) {
+        if (existingFile.license === 'not-marked-public-domain') {
+            existingFile.license = 'marked-as-public-domain';
+            await existingFile.save();
+        }
         return {
             alreadyExist: true as const,
             bookId: existingFile._id,
@@ -83,13 +93,29 @@ async function processFile(filePath: string) {
         throw new Error(`Couldn't parse book at path: '${filePath}'`);
     }
 
-    const { book } = parsingResult.value;
+    let { book } = parsingResult.value;
     const bookHash = buildBookHash(book);
     const existingBook = await checkForBookDuplicates(bookHash);
     if (existingBook) {
+        if (existingBook.license === 'not-marked-public-domain') {
+            existingBook.license = 'marked-as-public-domain';
+            await existingBook.save();
+        }
         return {
             alreadyExist: true as const,
             bookId: existingBook._id,
+        };
+    }
+
+    if (book.meta.license === 'unknown') {
+        book = {
+            ...book,
+            meta: {
+                ...book.meta,
+                license: publicDomain
+                    ? 'marked-public-domain'
+                    : 'not-marked-public-domain',
+            },
         };
     }
 

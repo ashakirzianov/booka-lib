@@ -58,9 +58,14 @@ router.post('/upload', authOpt(async ctx => {
     if (!ctx.account) {
         return { fail: 'Not authorized' };
     }
+    const publicDomain = ctx.query.publicDomain ?? false;
     const book = ctx.request.files.book;
     if (book) {
-        const bookId = await books.uploadEpub(book.path, ctx.account._id);
+        const bookId = await books.uploadEpub({
+            filePath: book.path,
+            publicDomain,
+            accountId: ctx.account._id,
+        });
         return bookId
             ? { success: bookId }
             : { fail: `Couldn't parse book` };
