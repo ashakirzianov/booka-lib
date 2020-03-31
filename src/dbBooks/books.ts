@@ -1,7 +1,7 @@
 import {
     LibraryCard, SearchResult, KnownTag, filterUndefined,
 } from 'booka-common';
-import { paginate } from 'booka-utils';
+import { paginate } from '../utils';
 import { Bucket } from '../assets';
 import { uploads } from '../dbUploads';
 import { docs } from './docs';

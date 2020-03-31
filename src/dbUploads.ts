@@ -1,4 +1,4 @@
-import { TypeFromSchema, model } from 'booka-utils';
+import { TypeFromSchema, model } from './utils';
 
 const schema = {
     accountId: {

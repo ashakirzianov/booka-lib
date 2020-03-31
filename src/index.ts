@@ -9,7 +9,7 @@ import { existsSync, readFileSync } from 'fs';
 import { router } from './routes';
 import { config, SslConfig } from './config';
 import { logDebug } from './log';
-import { connectDb } from 'booka-utils';
+import { connectDb } from './utils';
 
 configEnv();
 startup(new Koa());

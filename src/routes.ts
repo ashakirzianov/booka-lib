@@ -3,7 +3,7 @@ import {
     LibContract, fragmentForPath, previewForPath,
     firstPath, pathFromString, defaultFragmentLength,
 } from 'booka-common';
-import { createRouter } from 'booka-utils';
+import { createRouter } from './utils';
 import { authOpt } from './auth';
 import { uploads } from './dbUploads';
 

@@ -1,6 +1,6 @@
 import { PathMethodContract, AuthContract, AccountInfo } from 'booka-common';
-import { ApiHandler } from 'booka-utils';
 import Axios from 'axios';
+import { ApiHandler } from './utils';
 import { config } from './config';
 
 export function authOpt<C extends PathMethodContract & Partial<AuthContract>>(handler: ApiHandler<C, { account?: AccountInfo }>): ApiHandler<C> {
