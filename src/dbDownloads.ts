@@ -19,7 +19,7 @@ async function addDownload(bookId: string) {
         { bookId },
         { $inc: { count: 1 } },
         { upsert: true, new: true },
-    );
+    ).exec();
 }
 
 async function popular() {
