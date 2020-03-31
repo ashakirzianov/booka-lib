@@ -5,7 +5,7 @@ import { config } from './config';
 
 export function authOpt<C extends PathMethodContract & Partial<AuthContract>>(handler: ApiHandler<C, { account?: AccountInfo }>): ApiHandler<C> {
     return async (ctx, next) => {
-        const authHeader = ctx.request.headers.Authorization;
+        const authHeader = ctx.request.headers.authorization;
         const accountInfo = authHeader
             ? await fetchAccountInfo(authHeader)
             : undefined;
