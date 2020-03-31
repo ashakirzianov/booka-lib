@@ -21,7 +21,7 @@ export type RestrictedContext<C extends PathMethodContract, Ext = {}> = Ext & {
             [k in Defined<C['files']>]: File | undefined;
         },
         headers: {
-            Authorization?: string,
+            authorization?: string,
         },
         body?: C['body'],
     },
