@@ -3,17 +3,16 @@ import Axios from 'axios';
 import { ApiHandler } from './utils';
 import { config } from './config';
 
-export function authOpt<C extends PathMethodContract & Partial<AuthContract>>(handler: ApiHandler<C, { account?: AccountInfo }>): ApiHandler<C> {
+export function authOpt<C extends PathMethodContract & Partial<AuthContract>>(
+    handler: ApiHandler<C, { account?: AccountInfo }>,
+): ApiHandler<C, { account?: AccountInfo }> {
     return async (ctx, next) => {
         const authHeader = ctx.request.headers.authorization;
         const accountInfo = authHeader
             ? await fetchAccountInfo(authHeader)
             : undefined;
-
-        const augmentedCtx = accountInfo
-            ? { ...ctx, account: accountInfo }
-            : ctx;
-        return handler(augmentedCtx, next);
+        ctx.account = accountInfo;
+        return handler(ctx, next);
     };
 }
 
