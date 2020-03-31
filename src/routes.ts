@@ -31,7 +31,7 @@ router.get('/preview', async ctx => {
         const book = await books.byBookId(bookId);
         if (book) {
             const preview = previewForPath(book, nodePath(node));
-            return { success: preview };
+            return { success: { preview } };
         } else {
             return { fail: `Couldn't find book for id: ${bookId}` };
         }
