@@ -1,10 +1,11 @@
-import { books } from './db';
+import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
     firstPath, pathFromString, defaultFragmentLength,
 } from 'booka-common';
-import { createRouter } from 'booka-utils';
+import { createRouter } from './utils';
 import { authOpt } from './auth';
+import { uploads } from './dbUploads';
 
 export const router = createRouter<LibContract>();
 
@@ -54,13 +55,29 @@ router.get('/full', async ctx => {
     }
 });
 
-router.post('/upload', authOpt(async ctx => {
+router.get('/uploads', authOpt(async ctx => {
+    const account = ctx.account;
+    if (!account) {
+        return { fail: 'Not authorized' };
+    }
+
+    const bookIds = await uploads.all(account._id);
+    const cards = await books.cards(bookIds);
+    return { success: { cards, name: 'uploads' } };
+}));
+
+router.post('/uploads', authOpt(async ctx => {
     if (!ctx.account) {
         return { fail: 'Not authorized' };
     }
+    const publicDomain = ctx.query.publicDomain ?? false;
     const book = ctx.request.files.book;
     if (book) {
-        const bookId = await books.uploadEpub(book.path, ctx.account._id);
+        const bookId = await books.uploadEpub({
+            filePath: book.path,
+            publicDomain,
+            accountId: ctx.account._id,
+        });
         return bookId
             ? { success: bookId }
             : { fail: `Couldn't parse book` };
