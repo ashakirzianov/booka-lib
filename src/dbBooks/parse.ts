@@ -8,7 +8,7 @@ import { DbBook, docs } from './docs';
 import { uploadBookAsset } from './storage';
 import { generateBookAlias } from './alias';
 
-export async function parseAndInsert(filePath: string, publicDomain: boolean) {
+export async function parseAndInsert(filePath: string, publicDomain: boolean): Promise<string> {
     const processResult = await processFile(filePath, publicDomain);
     if (processResult.alreadyExist) {
         return processResult.bookId;
@@ -46,10 +46,7 @@ export async function parseAndInsert(filePath: string, publicDomain: boolean) {
         const inserted = await docs.insertMany(bookDocument);
         if (inserted) {
             logger().important('Inserted book with alias: ' + bookAlias);
-            return {
-                id: inserted._id,
-                alias: bookAlias,
-            };
+            return inserted._id;
         }
     }
 
