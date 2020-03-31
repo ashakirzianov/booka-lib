@@ -55,7 +55,18 @@ router.get('/full', async ctx => {
     }
 });
 
-router.post('/upload', authOpt(async ctx => {
+router.get('/uploads', authOpt(async ctx => {
+    const account = ctx.account;
+    if (!account) {
+        return { fail: 'Not authorized' };
+    }
+
+    const bookIds = await uploads.all(account._id);
+    const cards = await books.cards(bookIds);
+    return { success: { cards, name: 'uploads' } };
+}));
+
+router.post('/uploads', authOpt(async ctx => {
     if (!ctx.account) {
         return { fail: 'Not authorized' };
     }
@@ -112,14 +123,3 @@ router.post('/card/batch', async ctx => {
     }));
     return { success: results };
 });
-
-router.get('/user-uploads', authOpt(async ctx => {
-    const account = ctx.account;
-    if (!account) {
-        return { fail: 'Not authorized' };
-    }
-
-    const bookIds = await uploads.all(account._id);
-    const cards = await books.cards(bookIds);
-    return { success: { cards, name: 'uploads' } };
-}));
