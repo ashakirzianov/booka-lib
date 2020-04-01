@@ -29,6 +29,7 @@ export async function card(bookId: string): Promise<LibraryCard | undefined> {
             id: bookDb._id,
             alias: bookDb.bookAlias,
             tags: bookDb.tags as any[],
+            length: bookDb.textLength,
         }
         : undefined;
 }
@@ -66,6 +67,7 @@ export async function search(query: string, page: number) {
                 coverUrl: doc.cover,
                 smallCoverUrl: doc.coverSmall,
                 tags: (doc.tags ?? []) as KnownTag[],
+                length: doc.textLength,
             },
         };
     });

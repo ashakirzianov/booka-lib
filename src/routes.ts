@@ -1,11 +1,12 @@
 import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
-    firstPath, pathFromString, defaultFragmentLength,
+    firstPath, pathFromString, defaultFragmentLength, nodePath,
 } from 'booka-common';
 import { createRouter } from './utils';
 import { authOpt } from './auth';
 import { uploads } from './dbUploads';
+import { downloads } from './dbDownloads';
 
 export const router = createRouter<LibContract>();
 
@@ -21,6 +22,22 @@ router.get('/search', async ctx => {
             next: page + 1,
         },
     };
+});
+
+router.get('/preview', async ctx => {
+    const bookId = ctx.query.bookId;
+    const node = ctx.query.node;
+    if (bookId && node !== undefined) {
+        const book = await books.byBookId(bookId);
+        if (book) {
+            const preview = previewForPath(book, nodePath(node));
+            return { success: { preview } };
+        } else {
+            return { fail: `Couldn't find book for id: ${bookId}` };
+        }
+    } else {
+        return { fail: 'Book id or node are not specified' };
+    }
 });
 
 router.get('/fragment', async ctx => {
@@ -44,12 +61,16 @@ router.get('/fragment', async ctx => {
 });
 
 router.get('/full', async ctx => {
-    if (ctx.query.id) {
-        const card = await books.card(ctx.query.id);
-        const book = await books.byBookId(ctx.query.id);
-        return book && card
-            ? { success: { book, card } }
-            : { fail: `Couldn't find book for id: '${ctx.query.id}'` };
+    const bookId = ctx.query.id;
+    if (bookId) {
+        const card = await books.card(bookId);
+        const book = await books.byBookId(bookId);
+        if (book && card) {
+            downloads.addDownload(bookId);
+            return { success: { book, card } };
+        } else {
+            return { fail: `Couldn't find book for id: '${ctx.query.id}'` };
+        }
     } else {
         return { fail: 'Book id is not specified' };
     }
@@ -85,6 +106,13 @@ router.post('/uploads', authOpt(async ctx => {
 
     return { fail: 'File is not attached' };
 }));
+
+router.get('/popular', async ctx => {
+    const bookIds = await downloads.popular();
+    const cards = await books.cards(bookIds);
+
+    return { success: cards };
+});
 
 router.get('/card', async ctx => {
     const bookId = ctx.query.id;
