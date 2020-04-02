@@ -1,7 +1,7 @@
 import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
-    firstPath, pathFromString, defaultFragmentLength, nodePath,
+    firstPath, pathFromString, defaultFragmentLength, nodePath, tocForBook,
 } from 'booka-common';
 import { createRouter } from './utils';
 import { authOpt } from './auth';
@@ -25,13 +25,28 @@ router.get('/search', async ctx => {
 });
 
 router.get('/preview', async ctx => {
-    const bookId = ctx.query.bookId;
+    const bookId = ctx.query.id;
     const node = ctx.query.node;
     if (bookId && node !== undefined) {
         const book = await books.byBookId(bookId);
         if (book) {
             const preview = previewForPath(book, nodePath(node));
             return { success: { preview } };
+        } else {
+            return { fail: `Couldn't find book for id: ${bookId}` };
+        }
+    } else {
+        return { fail: 'Book id or node are not specified' };
+    }
+});
+
+router.get('/toc', async ctx => {
+    const bookId = ctx.query.id;
+    if (bookId) {
+        const book = await books.byBookId(bookId);
+        if (book) {
+            const toc = tocForBook(book);
+            return { success: toc };
         } else {
             return { fail: `Couldn't find book for id: ${bookId}` };
         }
