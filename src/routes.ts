@@ -124,30 +124,3 @@ router.get('/card', async ctx => {
         ? { success: card }
         : { fail: `Could not find card for id: ${bookId}` };
 });
-
-router.post('/card/batch', async ctx => {
-    const body = ctx.request.body;
-    if (!body) {
-        return { fail: 'Book id be specified in body' };
-    }
-    const results = await Promise.all(body.map(async ({ id, previews }) => {
-        const card = await books.card(id);
-        if (card === undefined) {
-            throw new Error(`Could not find card for id: ${id}`);
-        }
-        if (previews?.length) {
-            const book = await books.byBookId(id);
-            if (book === undefined) {
-                throw new Error(`Could not find book for id: ${id}`);
-            }
-            const resolvedPreviews = previews.map(path => previewForPath(book, path));
-            return {
-                card,
-                previews: resolvedPreviews,
-            };
-        } else {
-            return { card, previews: [] };
-        }
-    }));
-    return { success: results };
-});
