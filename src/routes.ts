@@ -123,7 +123,8 @@ router.post('/uploads', authOpt(async ctx => {
 }));
 
 router.get('/popular', async ctx => {
-    const bookIds = await downloads.popular();
+    const popular = await downloads.popular();
+    const bookIds = popular.map(p => p.bookId);
     const cards = await books.cards(bookIds);
 
     return { success: cards };
