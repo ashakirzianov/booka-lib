@@ -43,7 +43,7 @@ export async function parseAndInsert(filePath: string, publicDomain: boolean): P
             textLength,
         };
 
-        const inserted = await docs.insertMany(bookDocument);
+        const [inserted] = await docs.insertMany([bookDocument]);
         if (inserted) {
             logger().important('Inserted book with alias: ' + bookAlias);
             return inserted._id;

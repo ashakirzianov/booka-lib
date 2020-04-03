@@ -1,7 +1,7 @@
 import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
-    firstPath, pathFromString, defaultFragmentLength, nodePath,
+    firstPath, pathFromString, defaultFragmentLength, nodePath, tocForBook,
 } from 'booka-common';
 import { createRouter } from './utils';
 import { authOpt } from './auth';
@@ -25,13 +25,28 @@ router.get('/search', async ctx => {
 });
 
 router.get('/preview', async ctx => {
-    const bookId = ctx.query.bookId;
+    const bookId = ctx.query.id;
     const node = ctx.query.node;
     if (bookId && node !== undefined) {
         const book = await books.byBookId(bookId);
         if (book) {
             const preview = previewForPath(book, nodePath(node));
             return { success: { preview } };
+        } else {
+            return { fail: `Couldn't find book for id: ${bookId}` };
+        }
+    } else {
+        return { fail: 'Book id or node are not specified' };
+    }
+});
+
+router.get('/toc', async ctx => {
+    const bookId = ctx.query.id;
+    if (bookId) {
+        const book = await books.byBookId(bookId);
+        if (book) {
+            const toc = tocForBook(book);
+            return { success: toc };
         } else {
             return { fail: `Couldn't find book for id: ${bookId}` };
         }
@@ -108,7 +123,8 @@ router.post('/uploads', authOpt(async ctx => {
 }));
 
 router.get('/popular', async ctx => {
-    const bookIds = await downloads.popular();
+    const popular = await downloads.popular();
+    const bookIds = popular.map(p => p.bookId);
     const cards = await books.cards(bookIds);
 
     return { success: cards };
@@ -123,31 +139,4 @@ router.get('/card', async ctx => {
     return card
         ? { success: card }
         : { fail: `Could not find card for id: ${bookId}` };
-});
-
-router.post('/card/batch', async ctx => {
-    const body = ctx.request.body;
-    if (!body) {
-        return { fail: 'Book id be specified in body' };
-    }
-    const results = await Promise.all(body.map(async ({ id, previews }) => {
-        const card = await books.card(id);
-        if (card === undefined) {
-            throw new Error(`Could not find card for id: ${id}`);
-        }
-        if (previews?.length) {
-            const book = await books.byBookId(id);
-            if (book === undefined) {
-                throw new Error(`Could not find book for id: ${id}`);
-            }
-            const resolvedPreviews = previews.map(path => previewForPath(book, path));
-            return {
-                card,
-                previews: resolvedPreviews,
-            };
-        } else {
-            return { card, previews: [] };
-        }
-    }));
-    return { success: results };
 });

@@ -25,10 +25,13 @@ async function addDownload(bookId: string) {
 async function popular() {
     const results = await docs
         .find()
-        .sort({ count: +1 })
+        .sort({ count: -1 })
         .limit(50)
         .exec();
-    return results.map(r => r.bookId);
+    return results.map(r => ({
+        bookId: r.bookId,
+        count: r.count,
+    }));
 }
 
 export const downloads = {
