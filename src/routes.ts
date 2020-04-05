@@ -131,7 +131,9 @@ router.get('/popular', async ctx => {
 });
 
 router.get('/cards', async ctx => {
-    const bookIds = ctx.query.ids;
+    const bookIds = Array.isArray(ctx.query.ids) ? ctx.query.ids
+        : typeof ctx.query.ids === 'string' ? [ctx.query.ids]
+            : undefined;
     if (!bookIds) {
         return { fail: 'Book ids are not specified' };
     }
