@@ -1,5 +1,5 @@
 import {
-    LibraryCard, SearchResult, KnownTag, filterUndefined,
+    LibraryCard, SearchResult, KnownTag,
 } from 'booka-common';
 import { paginate } from '../utils';
 import { Bucket } from '../assets';
@@ -34,10 +34,10 @@ export async function card(bookId: string): Promise<LibraryCard | undefined> {
         : undefined;
 }
 
-export async function cards(bookIds: string[]): Promise<LibraryCard[]> {
-    return filterUndefined(await Promise.all(
+export async function cards(bookIds: string[]) {
+    return Promise.all(
         bookIds.map(bookId => card(bookId))
-    ));
+    );
 }
 
 export async function count() {
