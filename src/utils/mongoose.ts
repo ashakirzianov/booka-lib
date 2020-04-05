@@ -1,5 +1,4 @@
 import { Schema, model as modelMongoose, Document, Model, DocumentQuery, set, connect } from 'mongoose';
-import { HasId } from 'booka-common';
 
 export async function connectDb(uri: string) {
     set('useNewUrlParser', true);
@@ -21,7 +20,7 @@ export function model<S extends SchemaDefinition>(name: string, schema: S) {
     return modelMongoose<DocumentType<S>>(name, schemaObject);
 }
 
-export function extractDataFields<T extends Document>(doc: T): DataFromModel<Model<T>> & HasId {
+export function extractDataFields<T extends Document>(doc: T): DataFromModel<Model<T>> {
     const result = doc.toObject();
     delete result['__v'];
     return result;
@@ -32,7 +31,7 @@ export function taggedObject<T>(): TaggedObject<T> {
 }
 
 export type DataFromModel<M extends Model<Document>> =
-    M extends Model<infer D> ? Omit<D, keyof Document> : never;
+    M extends Model<infer D> ? Omit<D, Exclude<keyof Document, '_id'>> : never;
 export const ObjectId = Schema.Types.ObjectId;
 export type ObjectId = Schema.Types.ObjectId;
 type ObjectIdConstructor = typeof ObjectId;
