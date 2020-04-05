@@ -59,7 +59,7 @@ export async function search(query: string, page: number) {
     return result.map<SearchResult>(doc => {
         return {
             search: 'book',
-            desc: {
+            card: {
                 id: doc._id,
                 alias: doc.bookAlias,
                 title: doc.title ?? 'no-title',
