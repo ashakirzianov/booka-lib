@@ -115,7 +115,7 @@ router.post('/uploads', authOpt(async ctx => {
             accountId: ctx.account._id,
         });
         return bookId
-            ? { success: bookId }
+            ? { success: { bookId } }
             : { fail: `Couldn't parse book` };
     }
 
