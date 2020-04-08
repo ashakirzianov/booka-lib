@@ -18,13 +18,12 @@ async function startup(app: Koa) {
     await connectDb(process.env.LIB_MONGODB_URI || 'mongodb://localhost:27017/booka-lib');
 
     app.use(logger());
-    app.use(koaBody({
-        parsedMethods: ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'],
-        multipart: true,
-        formLimit: 50 * 1024 * 1024,
-    }));
     app.use(cors({
         origin: '*',
+    }));
+    app.use(koaBody({
+        multipart: true,
+        formLimit: 50 * 1024 * 1024,
     }));
 
     app
