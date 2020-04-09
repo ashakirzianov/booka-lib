@@ -1,5 +1,4 @@
 import { Schema, model as modelMongoose, Document, Model, DocumentQuery, set, connect } from 'mongoose';
-import { HasId } from 'booka-common';
 
 export async function connectDb(uri: string) {
     set('useNewUrlParser', true);
@@ -31,6 +30,7 @@ export function taggedObject<T>(): TaggedObject<T> {
     return Object;
 }
 
+export type HasId = { _id: string };
 export type DataFromModel<M extends Model<Document>> =
     M extends Model<infer D> ? Omit<D, keyof Document> : never;
 export const ObjectId = Schema.Types.ObjectId;

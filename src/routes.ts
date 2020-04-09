@@ -1,7 +1,7 @@
 import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
-    firstPath, pathFromString, defaultFragmentLength, nodePath, tocForBook,
+    firstPath, pathFromString, defaultFragmentLength, nodePath, tocForBook, filterUndefined,
 } from 'booka-common';
 import { createRouter } from './utils';
 import { authOpt } from './auth';
@@ -98,7 +98,7 @@ router.get('/uploads', authOpt(async ctx => {
     }
 
     const bookIds = await uploads.all(account._id);
-    const cards = await books.cards(bookIds);
+    const cards = filterUndefined(await books.cards(bookIds));
     return { success: { cards, name: 'uploads' } };
 }));
 
@@ -115,7 +115,7 @@ router.post('/uploads', authOpt(async ctx => {
             accountId: ctx.account._id,
         });
         return bookId
-            ? { success: bookId }
+            ? { success: { bookId } }
             : { fail: `Couldn't parse book` };
     }
 
@@ -125,18 +125,20 @@ router.post('/uploads', authOpt(async ctx => {
 router.get('/popular', async ctx => {
     const popular = await downloads.popular();
     const bookIds = popular.map(p => p.bookId);
-    const cards = await books.cards(bookIds);
+    const cards = filterUndefined(await books.cards(bookIds));
 
     return { success: cards };
 });
 
-router.get('/card', async ctx => {
-    const bookId = ctx.query.id;
-    if (!bookId) {
-        return { fail: 'Book id not specified' };
+router.get('/cards', async ctx => {
+    const bookIds = Array.isArray(ctx.query.ids) ? ctx.query.ids
+        : typeof ctx.query.ids === 'string' ? [ctx.query.ids]
+            : undefined;
+    if (!bookIds) {
+        return { fail: 'Book ids are not specified' };
     }
-    const card = await books.card(bookId);
-    return card
-        ? { success: card }
-        : { fail: `Could not find card for id: ${bookId}` };
+    const cards = await books.cards(bookIds);
+    return cards
+        ? { success: cards }
+        : { fail: `Could not find card for id: ${bookIds}` };
 });
