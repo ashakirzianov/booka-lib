@@ -18,9 +18,7 @@ async function startup(app: Koa) {
     await connectDb(process.env.LIB_MONGODB_URI || 'mongodb://localhost:27017/booka-lib');
 
     app.use(logger());
-    app.use(cors({
-        origin: '*',
-    }));
+    app.use(cors());
     app.use(koaBody({
         multipart: true,
         formLimit: 50 * 1024 * 1024,
