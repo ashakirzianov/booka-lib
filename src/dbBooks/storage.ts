@@ -6,7 +6,7 @@ import {
     getCoverBase64, failure,
 } from 'booka-common';
 import {
-    downloadStringAsset, Bucket, uploadBody, uploadJsonBucket, uploadEpubBucket,
+    downloadStringAsset, Bucket, uploadBody, uploadsJsonBucket, uploadsEpubBucket,
 } from '../assets';
 
 const bookaExt = '.booka';
@@ -40,29 +40,41 @@ type UploadBookInput = {
 type UploadBookOutput = {
     json: string,
     original?: string,
+    largeCover?: string,
+    smallCover?: string,
 };
 export async function uploadBookAsset({ book, bookAlias, originalFilePath }: UploadBookInput): Promise<Result<UploadBookOutput>> {
     const diags: Diagnostic[] = [];
     const key = `${bookAlias}${bookaExt}`;
+
+    // Cover
     const coverResult = await uploadCover(bookAlias, book);
     diags.push(coverResult.diagnostic);
+
+    // Json
     const json = JSON.stringify(book);
-    const jsonResult = await uploadBody(uploadJsonBucket, key, json);
+    const jsonResult = await uploadBody(uploadsJsonBucket, key, json);
     diags.push(jsonResult.diagnostic);
     if (jsonResult.success) {
+        let result: UploadBookOutput = {
+            json: jsonResult.value.key,
+            largeCover: coverResult.largeCoverUrl,
+            smallCover: coverResult.smallCoverUrl,
+        };
+
+        // Original
         const originalResult = await uploadOriginalEpub(bookAlias, originalFilePath);
         diags.push(originalResult.diagnostic);
         if (originalResult.success) {
-            return success(
-                { json: jsonResult.value.key, original: jsonResult.value.key },
-                compoundDiagnostic(diags),
-            );
-        } else {
-            return success(
-                { json: jsonResult.value.key },
-                compoundDiagnostic(diags),
-            );
+            result = {
+                ...result,
+                original: originalResult.value.key,
+            };
         }
+        return success(
+            result,
+            compoundDiagnostic(diags),
+        );
     } else {
         return failure(compoundDiagnostic(diags));
     }
@@ -115,7 +127,7 @@ async function resizeBookCover(buffer: Buffer): Promise<Buffer> {
 async function uploadOriginalEpub(bookId: string, filePath: string) {
     const fileBody = await promisify(readFile)(filePath);
     const key = `${bookId}`;
-    const result = await uploadBody(uploadEpubBucket, key, fileBody);
+    const result = await uploadBody(uploadsEpubBucket, key, fileBody);
 
     return result;
 }

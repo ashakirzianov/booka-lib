@@ -3,7 +3,7 @@ import {
     extractBookText, buildFileHash, buildBookHash,
 } from 'booka-common';
 import { logger } from '../log';
-import { uploadJsonBucket, uploadEpubBucket } from '../assets';
+import { uploadsJsonBucket, uploadsEpubBucket } from '../assets';
 import { DbBook, docs } from './docs';
 import { uploadBookAsset } from './storage';
 import { generateBookAlias } from './alias';
@@ -32,9 +32,9 @@ export async function parseAndInsert(filePath: string, publicDomain: boolean): P
             author: book.meta.author,
             license: book.meta.license,
             cover: coverUrl,
-            jsonBucketId: uploadJsonBucket,
+            jsonBucketId: uploadsJsonBucket,
             jsonAssetId: uploadResult.value.json,
-            originalBucketId: uploadEpubBucket,
+            originalBucketId: uploadsEpubBucket,
             originalAssetId: uploadResult.value.original,
             bookAlias: bookAlias,
             bookHash,
