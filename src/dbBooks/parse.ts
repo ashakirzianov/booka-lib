@@ -22,20 +22,17 @@ export async function parseAndInsert(filePath: string, publicDomain: boolean): P
         originalFilePath: filePath,
     });
     if (uploadResult.success) {
-        const coverImage = book.meta.coverImage;
-        const coverUrl = coverImage && coverImage.image === 'external'
-            ? coverImage.url
-            : undefined;
         const textLength = extractBookText(book).length;
         const bookDocument: DbBook = {
             title: book.meta.title,
             author: book.meta.author,
             license: book.meta.license,
-            cover: coverUrl,
             jsonBucketId: uploadsJsonBucket,
             jsonAssetId: uploadResult.value.json,
             originalBucketId: uploadsEpubBucket,
             originalAssetId: uploadResult.value.original,
+            cover: uploadResult.value.largeCover,
+            coverSmall: uploadResult.value.smallCover,
             bookAlias: bookAlias,
             bookHash,
             fileHash,
