@@ -41,6 +41,7 @@ export async function parseAndInsert(filePath: string, publicDomain: boolean): P
             fileHash,
             tags: book.tags,
             textLength,
+            private: true,
         };
 
         const [inserted] = await docs.insertMany([bookDocument]);
