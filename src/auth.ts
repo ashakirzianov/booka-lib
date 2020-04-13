@@ -1,7 +1,9 @@
-import { PathMethodContract, AuthContract, AccountInfo } from 'booka-common';
-import Axios from 'axios';
+import {
+    PathMethodContract, AuthContract, AccountInfo, BackContract,
+} from 'booka-common';
 import { ApiHandler } from './utils';
 import { config } from './config';
+import { createFetcher } from './fetcher';
 
 export function authOpt<C extends PathMethodContract & Partial<AuthContract>>(
     handler: ApiHandler<C, { account?: AccountInfo }>,
@@ -16,16 +18,15 @@ export function authOpt<C extends PathMethodContract & Partial<AuthContract>>(
     };
 }
 
+const backFetcher = createFetcher<BackContract>(config().backendBase);
 async function fetchAccountInfo(authHeader: string) {
-    const response = await Axios.get(`${config().backendBase}/me/info`, {
-        responseType: 'json',
-        headers: {
-            Authorization: authHeader,
-        },
+    const token = authHeader.substr('Bearer '.length);
+    const response = await backFetcher.get('/account', {
+        auth: token,
     });
 
-    if (response.data) {
-        return response.data as AccountInfo;
+    if (response.success) {
+        return response.value;
     } else {
         return undefined;
     }
