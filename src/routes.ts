@@ -1,7 +1,7 @@
 import { books } from './dbBooks';
 import {
     LibContract, fragmentForPath, previewForPath,
-    firstPath, pathFromString, defaultFragmentLength, nodePath, tocForBook, filterUndefined,
+    firstPath, pathFromString, defaultFragmentLength, nodePath, tocForBook, filterUndefined, positionForPath, bookLength, pathToString,
 } from 'booka-common';
 import { createRouter } from './utils';
 import { authOpt } from './auth';
@@ -30,8 +30,14 @@ router.get('/preview', async ctx => {
     if (bookId && node !== undefined) {
         const book = await books.byBookId(bookId);
         if (book) {
-            const preview = previewForPath(book, nodePath(node));
-            return { success: { preview } };
+            const path = nodePath(node);
+            const preview = previewForPath(book, path);
+            if (!preview) {
+                return { fail: `Couldn't resolve path: ${pathToString(path)}` };
+            }
+            const position = positionForPath(book, path);
+            const of = bookLength(book);
+            return { success: { preview, position, of } };
         } else {
             return { fail: `Couldn't find book for id: ${bookId}` };
         }
