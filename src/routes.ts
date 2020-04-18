@@ -24,7 +24,7 @@ router.get('/search', async ctx => {
     };
 });
 
-router.get('/path-data', async ctx => {
+router.get('/preview', async ctx => {
     const bookId = ctx.query.id;
     const node = ctx.query.node;
     if (bookId && node !== undefined) {
